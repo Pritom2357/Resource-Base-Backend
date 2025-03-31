@@ -1,0 +1,416 @@
+import pool from '../config/db.js';
+import {v4 as uuidv4} from 'uuid';
+
+
+export async function getResources(limit=20, offset=0, sortBy='vote_count') {
+    const validSortOptions = {
+        'vote_count': 'vote_count DESC',
+        'newest': 'r.created_at DESC',
+        'bookmarks': 'bookmark_count DESC'
+    };
+
+    const sortOption = validSortOptions[sortBy] || validSortOptions['vote_count'];
+
+    const query = `
+    SELECT r.*,
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+    (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+    (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+    u.username as author_username
+    FROM resource_posts r
+    JOIN users u ON r.user_id = u.id
+    ORDER BY ${sortOption}
+    LIMIT $1 OFFSET $2
+    `;
+
+    const result = await pool.query(query, [limit, offset]);
+    return result.rows;
+}
+
+export async function createPost(postData) {
+    const {postTitle, postDescription, userId, resources=[], tags=[]} = postData;
+    const postId = uuidv4();
+
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            "INSERT INTO resource_posts (id, post_title, post_description, user_id, vote_count, comment_count, created_at) VALUES($1, $2, $3, $4, 0, 0, NOW())", 
+            [postId, postTitle, postDescription, userId]
+        );
+
+        for(const resource of resources){
+            const resourceId = uuidv4();
+
+            await client.query(
+                "INSERT INTO resources (id, name, url, description) VALUES ($1, $2, $3, $4)",
+                [resourceId, resource.title, resource.url, resource.description]
+            );
+
+            await client.query(
+                "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", [postId, resourceId]
+            );
+        }
+
+        if(tags && tags.length > 0){
+            for(const tagName of tags){
+                const tagResult = await client.query(
+                    "SELECT id FROM tags WHERE tag_name=$1", 
+                    [tagName]
+                );
+                
+                let tagId;
+                if(tagResult.rows.length === 0){
+                    tagId = uuidv4();
+                    await client.query(
+                        "INSERT INTO tags (id, tag_name) VALUES ($1, $2)", [tagId, tagName]
+                    );
+                }else{
+                    tagId = tagResult.rows[0].id;
+                }
+
+                await client.query(
+                    "INSERT INTO resource_tags (post_id, tag_id) VALUES ($1, $2)", [postId, tagId]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+
+        return {
+            success: true,
+            postId,
+            resourceCount: resources.length
+        };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error creating resource:", error);
+        throw error;
+    } finally{
+        client.release();
+    }
+};
+
+export async function editPost(postId, updates) {
+    const  {postTitle, postDescription, addResources, updateResources, removeResources, addTags, removeTags} = updates;
+    const client = await pool.connect();
+
+    try {
+
+        await client.query('BEGIN');
+
+        if(postTitle || postDescription){
+            await client.query(
+                `UPDATE resource_posts
+                SET post_title = COALESCE($1, post_title),
+                    post_description = COALESCE($2, post_description)
+                WHERE id = $3`,
+                [postTitle, postDescription, postId]
+            );
+        }
+
+        if(addResources && addResources.length > 0){
+            for(const resource of addResources){
+                const resourceId = uuidv4();
+                await client.query(
+                    "INSERT INTO resources (id, name, url, description) VALUES ($1, $2, $3, $4)", [resourceId, resource.title, resource.url, resource.description]
+                );
+
+                await client.query(
+                    "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", [postId, resourceId]
+                );
+            }
+        }
+
+        if(updateResources && updateResources.length > 0){
+            for(const resource of updateResources){
+                await client.query(
+                    `UPDATE resources
+                    SET name = COALESCE($1, name),
+                        url = COALESCE($2, url),
+                        description = COALESCE($3, description)
+                    WHERE id = $4`, 
+                    [resource.title, resource.url, resource.description, resource.id]
+                );
+            }
+        }
+
+        if(removeResources && removeResources.length > 0){
+            for(const resourceId of removeResources){
+                await client.query(
+                    "DELETE FROM post_resources WHERE post_id = $1 AND resource_id = $2",
+                    [postId, resourceId]
+                );
+
+                const usageCheck = await client.query(
+                    "SELECT COUNT(*) FROM post_resources WHERE resource_id = $1", [resourceId]
+                );
+
+                if(parseInt(usageCheck.rows[0].count) === 0){
+                    await client.query(
+                        "DELETE FROM resources WHERE id = $1", [resourceId]
+                    );
+                }
+            }
+        }
+
+        if(addTags && addTags.length > 0){
+            for(const tagName of addTags){
+                const tagResult = await client.query(
+                    "SELECT id FROM tags WHERE tag_name = $1", [tagName]
+                );
+                
+                let tagId;
+                if(tagResult.rows.length === 0){
+                    tagId = uuidv4();
+
+                    await client.query(
+                        "INSERT INTO tags (id, tag_name) VALUES ($1, $2)",
+                        [tagId, tagName]
+                    );
+                }else{
+                    tagId = tagResult.rows[0].id;
+                }
+
+                await client.query(
+                    "INSERT INTO resource_tags (post_id, tag_id) VALUES ($1, $2)", [postId, tagId]
+                );
+            }
+        }
+
+        if(removeTags && removeTags.length > 0){
+            for(const tagName of removeTags){
+                const tagResult = await client.query(
+                    "SELECT id FROM tags WHERE tag_name = $1", [tagName]
+                );
+
+                if(tagResult.rows.length !== 0){
+                    const tagId = tagResult.rows[0].id;
+                    await client.query(
+                        "DELETE FROM resource_tags WHERE post_id = $1 AND tag_id = $2", [postId, tagId]
+                    );
+
+                    const usageTag = await client.query(
+                        "SELECT COUNT(*) FROM tags WHERE id = $1", [tagId]
+                    );
+
+                    if(parseInt(usageTag.rows[0].count) === 0){
+                        await client.query(
+                            "DELETE FROM tags WHERE id = $1", [tagId]
+                        );
+                    }
+                }
+            }
+        }
+
+        await client.query('COMMIT');
+        return { success:true }
+        
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error editing post:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export async function getPost(postId) {
+    const query = `
+    SELECT 
+        p.*,
+        (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'up') - 
+        (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'down') as vote_count,
+        u.username as author_username,
+        json_agg(json_build_object(
+            'id', r.id,
+            'title', r.name,
+            'description', r.description,
+            'url', r.url
+        )) as resources,
+        (SELECT json_agg(t.tag_name) FROM resource_tags rt 
+         JOIN tags t ON rt.tag_id = t.id 
+         WHERE rt.post_id = p.id) as tags
+    FROM resource_posts p
+    JOIN users u ON p.user_id = u.id
+    LEFT JOIN post_resources pr ON p.id = pr.post_id
+    LEFT JOIN resources r ON pr.resource_id = r.id
+    WHERE p.id = $1
+    GROUP BY p.id, u.username
+    `;
+    
+    const result = await pool.query(query, [postId]);
+    return result.rows[0];
+};
+
+export async function voteOnPost(userId, postId, voteType) {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const existingVote = await client.query(
+            "SELECT * FROM votes WHERE user_id = $1 AND resource_id = $2", [userId, postId]
+        );
+
+        if(existingVote.rows.length > 0){
+            if(existingVote.rows[0].vote_type !== voteType){
+                await client.query(
+                    "UPDATE votes SET vote_type = $1, created_at = NOW() WHERE id=$2", [voteType, existingVote.rows[0].id]
+                );
+            }else{
+                await client.query(
+                    "DELETE FROM votes WHERE id=$1", [existingVote.rows[0].id]
+                );
+            }
+        }else{
+            await client.query(
+                "INSERT INTO votes (id, user_id, resource_id, vote_type, created_at) VALUES ($1, $2, $3, $4, NOW())", [uuidv4(), userId, postId, voteType]
+            );
+        }
+
+        await client.query('COMMIT');
+        return {
+            success: true
+        }
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error voting on post: ", error);
+        throw error;
+    } finally{
+        client.release();
+    }
+};
+
+export async function toggleBookmark(userId, postId) {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const existingBookmark = await client.query(
+            "SELECT * FROM bookmarks WHERE user_id = $1 AND resource_id = $2", [userId, postId]
+        );
+
+        if(existingBookmark.rows.length > 0){
+            await client.query(
+                "DELETE FROM bookmarks WHERE id = $1",
+                [existingBookmark.rows[0].id]
+            );
+
+            await client.query('COMMIT');
+
+            return {
+                success: true,
+                action: 'removed'
+            };
+        }else{
+            await client.query(
+                "INSERT INTO bookmarks (id, user_id, resource_id, created_at) VALUES ($1, $2, $3, NOW())", [uuidv4(), userId, postId]
+            );
+
+            await client.query('COMMIT');
+            return {
+                success: true,
+                action: 'added'
+            };
+        }
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error toggling bookmark:", error);
+        throw error;
+    } finally{
+        client.release();
+    }
+};
+
+export async function addComment(userId, postId, comment) {
+    const client = await pool.connect();
+    const commentId = uuidv4();
+
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            "INSERT INTO comments (id, user_id, resource_id, comment, like_count, created_at) VALUES ($1, $2, $3, $4, 0, NOW())", [commentId, userId, postId, comment]
+        );
+
+        await client.query(
+            "UPDATE resource_posts SET comment_count = comment_count + 1 WHERE id = $1", [postId]
+        );
+
+        await client.query('COMMIT');
+        return {
+            success: true,
+            commentId
+        }
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error adding comment:", error);
+        throw error;
+    } finally{
+        client.release();
+    }
+};
+
+export async function getPostComments(postId, limit=20, offset=0) {
+    const query = `
+    SELECT c.*, u.username as author_username
+    FROM comments c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.resource_id = $1
+    ORDER BY c.created_at DESC
+    LIMIT $2 OFFSET $3
+    `;
+    
+    const result = await pool.query(query, [postId, limit, offset]);
+    return result.rows;
+};
+
+export async function searchResources(searchTerm, limit=20) {
+    const query = `
+    SELECT r.*,
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+    (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+    (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+    u.username as author_username
+    FROM resource_posts r
+    JOIN users u ON r.user_id = u.id
+    WHERE 
+        r.post_title ILIKE $1 OR
+        r.post_description ILIKE $1 OR
+        EXISTS (
+            SELECT 1 FROM tags t
+            JOIN resource_tags rt ON rt.tag_id = t.id
+            WHERE rt.post_id = r.id AND t.tag_name ILIKE $1
+        )
+    ORDER BY r.created_at DESC
+    LIMIT $2
+    `;
+    
+    const result = await pool.query(query, [`%${searchTerm}%`, limit]);
+    return result.rows;
+}
+
+export async function getUserResources(userId, limit=20, offset=0) {
+    const query = `
+      SELECT r.*,
+        (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+        (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+        (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+        (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+        u.username as author_username
+      FROM resource_posts r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    
+    const result = await pool.query(query, [userId, limit, offset]);
+    return result.rows;
+  }

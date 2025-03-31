@@ -1,0 +1,2 @@
+1. The accesstoken and the refreshtokens are seen on the localStorage/sessionStorage. Need some Security
+2. some environment variables are missing like NODE_ENV
