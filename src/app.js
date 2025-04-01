@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import session from 'express-session'
+import pgSession from 'connect-pg-simple';
 import passport from 'passport'
 
 import authRoutes from './routes/authRoutes.js';
@@ -14,12 +15,16 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 import configurePassport from './config/passport.js';
 import authConfig from './config/auth.js';
+// import auth from './config/auth.js';
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({
-    origin: authConfig.frontend.url,
+    origin: [
+        'https://resource-base-frontend-production.up.railway.app',
+        process.env.FRONTEND_URL
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -33,6 +38,12 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
+    store: new pgSession({
+        conString: process.env.DATABASE_URL,
+        tableName: 'session',
+        createTableIfMissing: true,
+        ssl: {rejectUnauthorized: false}
+    }),
     secret: authConfig.session.secret,
     resave: false,
     saveUninitialized: false,
@@ -41,7 +52,7 @@ app.use(session({
         httpOnly: true,
         sameSite: 'lax'
     }
-}));
+}))
 
 app.use(passport.initialize());
 app.use(passport.session());
