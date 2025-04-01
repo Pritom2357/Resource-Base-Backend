@@ -425,6 +425,6 @@ export async function getPopularTags(limit = 10) {
         LIMIT $1
     `;
 
-    const result = pool.query(query, [limit]);
+    const result = await pool.query(query, [limit]);
     return result.rows;
 }
