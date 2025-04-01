@@ -169,3 +169,16 @@ export async function searchResources(req, res) {
         res.status(500).json({ error: 'Failed to search resources' });
     }
 }
+
+export async function getPopularTags(req, res) {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        
+        
+        const result = await resourceModel.getPopularTags(limit);
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching popular tags:', error);
+        res.status(500).json({ error: 'Failed to fetch popular tags' });
+    }
+}

@@ -414,3 +414,17 @@ export async function getUserResources(userId, limit=20, offset=0) {
     const result = await pool.query(query, [userId, limit, offset]);
     return result.rows;
   }
+
+export async function getPopularTags(limit = 10) {
+    const query = `
+        SELECT t.tag_name, COUNT(rt.tag_id) as count
+        FROM tags t
+        JOIN resource_tags rt ON t.id = rt.tag_id
+        GROUP BY t.tag_name
+        ORDER BY count DESC
+        LIMIT $1
+    `;
+
+    const result = pool.query(query, [limit]);
+    return result.rows;
+}

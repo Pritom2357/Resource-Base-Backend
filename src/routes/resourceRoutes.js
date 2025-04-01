@@ -10,6 +10,7 @@ router.get('/', resourceController.getResources);
 router.get('/search', resourceController.searchResources);
 router.get('/:id', resourceController.getResource);
 router.get('/:id/comments', resourceController.getResourceComments);
+router.get('/tags/popular', resourceController.getPopularTags);
 
 //protected
 router.post('/', authenticateToken, resourceController.createResource);
