@@ -38,12 +38,12 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    store: new pgSession({
-        conString: process.env.DATABASE_URL,
-        tableName: 'session',
-        createTableIfMissing: true,
-        ssl: {rejectUnauthorized: false}
-    }),
+    // store: new pgSession({
+    //     conString: process.env.DATABASE_URL,
+    //     tableName: 'session',
+    //     createTableIfMissing: true,
+    //     ssl: {rejectUnauthorized: false}
+    // }),
     secret: authConfig.session.secret,
     resave: false,
     saveUninitialized: false,
