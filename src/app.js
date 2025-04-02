@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import resourceRoutes from './routes/resourceRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import statusRoutes from './routes/statusRoutes.js';
+import generalRoutes from './routes/generalRoutes.js'
 
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
@@ -63,6 +64,7 @@ app.use('/auth', authRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api', generalRoutes);
 
 app.get('/', (req, res)=>{
     res.json({
