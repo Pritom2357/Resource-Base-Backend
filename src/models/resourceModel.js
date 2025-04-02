@@ -4,7 +4,7 @@ import {v4 as uuidv4} from 'uuid';
 
 export async function getResources(limit=20, offset=0, sortBy='vote_count') {
     const validSortOptions = {
-        'vote_count': 'vote_count DESC',
+        'vote_count': '((SELECT COUNT(*) FROM votes v WHERE v.resource_id=r.id AND vote_type=\'up\') - (SELECT COUNT(*) FROM votes v WHERE v.resource_id=r.id AND vote_type=\'down\')) DESC',
         'newest': 'r.created_at DESC',
         'bookmarks': 'bookmark_count DESC'
     };
