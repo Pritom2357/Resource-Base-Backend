@@ -192,3 +192,21 @@ export async function getCategories(req, res) {
         res.status(500).json({ error: 'Failed to fetch categories' });
     }
 }
+
+export async function checkSimilarity(req, res) {
+    try {
+        const {url} = req.query;
+
+        if(!url){
+            return res.status(400).json({
+                error: "URL parameter is required"
+            });
+        }
+
+        const similar = await resourceModel.checkSimilarResources(url);
+        res.json({similar});
+    } catch (error) {
+        console.error('Error checking similarity:', error);
+        res.status(500).json({ error: 'Failed to check similarity' });
+    }
+}

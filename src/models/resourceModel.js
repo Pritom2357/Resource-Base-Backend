@@ -457,3 +457,39 @@ export async function getCategories() {
         throw error;
     }
 }
+
+export async function checkSimilarResources(url) {
+    try {
+        let domain = '';
+
+        try {
+            const urlObj = new URL(url);
+            domain = urlObj.hostname;
+        } catch (error) {
+            console.error("Invalid URL format: ", error);
+            domain = url;
+        }
+
+        const query = `
+        SELECT
+            p.id,
+            p.post_title as title,
+            p.created_at,
+            u.username as author_username
+        FROM resources r
+        JOIN post_resources pr ON r.id = pr.resource_id
+        JOIN resource_posts p ON pr.post_id = p.id
+        JOIN users u ON p.user_id = u.id
+        WHERE r.url = $1
+        OR r.url LIKE $2
+        GROUP BY p.id, u.username
+        LIMIT 5
+        `;
+
+        const result = await pool.query(query, [url, `%${domain}%`]);
+        return result.rows;
+    } catch (error) {
+        console.error("Error checking similar resources:", error);
+        throw error;
+    }
+}
