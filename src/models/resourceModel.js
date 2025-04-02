@@ -428,3 +428,32 @@ export async function getPopularTags(limit = 10) {
     const result = await pool.query(query, [limit]);
     return result.rows;
 }
+
+export async function getCategories() {
+    try {
+        const query = `
+        SELECT id, name
+        FROM categories
+        ORDER BY name ASC
+        `;
+
+        const result = await pool.query(query);
+        if(result.rows.length > 0){
+            return result.rows;
+        }else{
+            return [
+                { id: 'frontend', name: 'Frontend Development', description: 'Resources for frontend technologies' },
+                { id: 'backend', name: 'Backend Development', description: 'Server-side programming and APIs' },
+                { id: 'devops', name: 'DevOps', description: 'Deployment, CI/CD, and infrastructure' },
+                { id: 'mobile', name: 'Mobile Development', description: 'iOS, Android and cross-platform apps' },
+                { id: 'design', name: 'UI/UX Design', description: 'User interface and experience design' },
+                { id: 'database', name: 'Database', description: 'SQL, NoSQL and data management' },
+                { id: 'security', name: 'Security', description: 'Web security and best practices' },
+                { id: 'career', name: 'Career', description: 'Professional development for developers' }
+            ];
+        }
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        throw error;
+    }
+}
