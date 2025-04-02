@@ -36,13 +36,14 @@ export async function getResource(req, res) {
 
 export async function createResource(req, res) {
     try {
-        const {postTitle, postDescription, resources, tags} = req.body;
+        const {postTitle, postDescription, category, resources, tags} = req.body;
         const userId = req.user.id;
 
         const result = await resourceModel.createPost({
             postTitle,
             postDescription,
             userId,
+            category,
             resources,
             tags
         });

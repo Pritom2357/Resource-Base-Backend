@@ -28,7 +28,7 @@ export async function getResources(limit=20, offset=0, sortBy='vote_count') {
 }
 
 export async function createPost(postData) {
-    const {postTitle, postDescription, userId, resources=[], tags=[]} = postData;
+    const {postTitle, postDescription, userId, category, resources=[], tags=[]} = postData;
     const postId = uuidv4();
 
     const client = await pool.connect();
@@ -37,8 +37,8 @@ export async function createPost(postData) {
         await client.query('BEGIN');
 
         await client.query(
-            "INSERT INTO resource_posts (id, post_title, post_description, user_id, vote_count, comment_count, created_at) VALUES($1, $2, $3, $4, 0, 0, NOW())", 
-            [postId, postTitle, postDescription, userId]
+            "INSERT INTO resource_posts (id, post_title, post_description, user_id, category_id, vote_count, comment_count, created_at) VALUES($1, $2, $3, $4, $5, 0, 0, NOW())", 
+            [postId, postTitle, postDescription, userId, category]
         );
 
         for(const resource of resources){
@@ -95,20 +95,21 @@ export async function createPost(postData) {
 };
 
 export async function editPost(postId, updates) {
-    const  {postTitle, postDescription, addResources, updateResources, removeResources, addTags, removeTags} = updates;
+    const  {postTitle, postDescription, category, addResources, updateResources, removeResources, addTags, removeTags} = updates;
     const client = await pool.connect();
 
     try {
 
         await client.query('BEGIN');
 
-        if(postTitle || postDescription){
+        if(postTitle || postDescription || category){
             await client.query(
                 `UPDATE resource_posts
                 SET post_title = COALESCE($1, post_title),
-                    post_description = COALESCE($2, post_description)
-                WHERE id = $3`,
-                [postTitle, postDescription, postId]
+                    post_description = COALESCE($2, post_description),
+                    category_id = COALESCE($3, category_id)
+                WHERE id = $4`,
+                [postTitle, postDescription, category, postId]
             );
         }
 
@@ -222,6 +223,8 @@ export async function getPost(postId) {
     const query = `
     SELECT 
         p.*,
+        c.id as category_id,
+        c.name as category_name,
         (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'up') - 
         (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'down') as vote_count,
         u.username as author_username,
@@ -236,10 +239,11 @@ export async function getPost(postId) {
          WHERE rt.post_id = p.id) as tags
     FROM resource_posts p
     JOIN users u ON p.user_id = u.id
+    LEFT JOIN categories c ON p.category_id = c.id
     LEFT JOIN post_resources pr ON p.id = pr.post_id
     LEFT JOIN resources r ON pr.resource_id = r.id
     WHERE p.id = $1
-    GROUP BY p.id, u.username
+    GROUP BY p.id, u.username, c.id
     `;
     
     const result = await pool.query(query, [postId]);
