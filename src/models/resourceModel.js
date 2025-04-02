@@ -16,7 +16,10 @@ export async function getResources(limit=20, offset=0, sortBy='vote_count') {
     (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
     (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
-    u.username as author_username
+    u.username as author_username,
+        (SELECT json_agg(t.tag_name) FROM resource_tags rt
+        JOIN tags t ON rt.tag_id = t.id
+        WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
     ORDER BY ${sortOption}
