@@ -14,6 +14,7 @@ router.get('/check-similarity', resourceController.checkSimilarity);
 router.get('/extract-metadata', resourceController.extractUrlMetadata);
 router.get('/:id', resourceController.getResource);
 router.get('/:id/comments', resourceController.getResourceComments);
+router.get('/:id/comments', resourceController.getResourceComments);
 
 //protected
 router.post('/', authenticateToken, resourceController.createResource);
@@ -21,6 +22,7 @@ router.put('/:id', authenticateToken, resourceController.updateResource);
 router.post('/:id/vote', authenticateToken, resourceController.voteOnResource);
 router.post('/:id/bookmark', authenticateToken, resourceController.toggleBookmark);
 router.post('/:id/comment', authenticateToken, resourceController.addComment);
+router.post('/:id/comments', authenticateToken, resourceController.addComment);
 
 export default router;
 
