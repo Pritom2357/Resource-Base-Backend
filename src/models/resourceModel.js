@@ -55,9 +55,9 @@ export async function createPost(postData) {
                     resource.title, 
                     resource.url, 
                     resource.description,
-                    resource.thumbnail_url || null,
-                    resource.favicon_url || null,
-                    resource.site_name || null
+                    resource.thumbnail_url, 
+                    resource.favicon_url,   
+                    resource.site_name      
                 ]
             );
 
