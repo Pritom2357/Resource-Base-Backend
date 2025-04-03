@@ -10,7 +10,8 @@ router.get('/', resourceController.getResources);
 router.get('/search', resourceController.searchResources);
 router.get('/tags/popular', resourceController.getPopularTags);
 router.get('/categories', resourceController.getCategories);
-router.get('/check-similarity', resourceController.checkSimilarity)
+router.get('/check-similarity', resourceController.checkSimilarity);
+router.get('/extract-metadata', resourceController.extractUrlMetadata);
 router.get('/:id', resourceController.getResource);
 router.get('/:id/comments', resourceController.getResourceComments);
 

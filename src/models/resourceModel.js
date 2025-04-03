@@ -49,8 +49,16 @@ export async function createPost(postData) {
             const resourceId = uuidv4();
 
             await client.query(
-                "INSERT INTO resources (id, name, url, description) VALUES ($1, $2, $3, $4)",
-                [resourceId, resource.title, resource.url, resource.description]
+                "INSERT INTO resources (id, name, url, description, thumbnail_url, favicon_url, site_name) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                [
+                    resourceId, 
+                    resource.title, 
+                    resource.url, 
+                    resource.description,
+                    resource.thumbnail_url || null,
+                    resource.favicon_url || null,
+                    resource.site_name || null
+                ]
             );
 
             await client.query(
@@ -136,9 +144,20 @@ export async function editPost(postId, updates) {
                     `UPDATE resources
                     SET name = COALESCE($1, name),
                         url = COALESCE($2, url),
-                        description = COALESCE($3, description)
-                    WHERE id = $4`, 
-                    [resource.title, resource.url, resource.description, resource.id]
+                        description = COALESCE($3, description),
+                        thumbnail_url = COALESCE($4, thumbnail_url),
+                        favicon_url = COALESCE($5, favicon_url),
+                        site_name = COALESCE($6, site_name)
+                    WHERE id = $7`, 
+                    [
+                        resource.title, 
+                        resource.url, 
+                        resource.description, 
+                        resource.thumbnail_url,
+                        resource.favicon_url,
+                        resource.site_name,
+                        resource.id
+                    ]
                 );
             }
         }
@@ -236,7 +255,10 @@ export async function getPost(postId) {
             'id', r.id,
             'title', r.name,
             'description', r.description,
-            'url', r.url
+            'url', r.url,
+            'thumbnail_url', r.thumbnail_url,
+            'favicon_url', r.favicon_url,
+            'site_name', r.site_name
         )) as resources,
         (SELECT json_agg(t.tag_name) FROM resource_tags rt 
          JOIN tags t ON rt.tag_id = t.id 

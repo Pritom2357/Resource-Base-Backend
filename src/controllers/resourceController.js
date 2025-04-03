@@ -1,4 +1,6 @@
-import * as resourceModel from '../models/resourceModel.js'
+import * as resourceModel from '../models/resourceModel.js';
+import { parse } from 'node-html-parser';
+import fetch from 'node-fetch'
 
 export async function getResources(req, res) {
     try {
@@ -209,5 +211,97 @@ export async function checkSimilarity(req, res) {
     } catch (error) {
         console.error('Error checking similarity:', error);
         res.status(500).json({ error: 'Failed to check similarity' });
+    }
+}
+
+export async function extractUrlMetadata(req, res) {
+    try {
+        const {url} = req.query;
+
+        if(!url){
+            return res.status(400).json({
+                error: "URL parameter is required"
+            });
+        }
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+
+        const html = await response.text();
+        const root = parse(html);
+
+        const metadata = {
+            title: '',
+            description: '',
+            image: '',
+            favicon: '',
+            siteName: ''
+        };
+
+        const ogTitle = root.querySelector('meta[property="og:title"]');
+        const titleTag = root.querySelector('title');
+        metadata.title = ogTitle ? ogTitle.getAttribute('content') : (titleTag ? titleTag.text : '');
+
+        const ogDesc = root.querySelector('meta[property="og:description"]');
+        const metaDesc = root.querySelector('meta[name="description"]');
+        metadata.description = ogDesc ? ogDesc.getAttribute('content') : (metaDesc ? metaDesc.getAttribute('content') : '');
+
+        const ogImage = root.querySelector('meta[property="og:image"]');
+        metadata.image = ogImage ? ogImage.getAttribute('content') : '';
+
+        let favicon = root.querySelector('link[rel="icon"]') || 
+                      root.querySelector('link[rel="shortcut icon"]') ||
+                      root.querySelector('link[rel="apple-touch-icon"]');
+
+        if(favicon){
+            let faviconUrl = favicon.getAttribute('href');
+
+            if(faviconUrl && !faviconUrl.startsWith('http')){
+                const urlObj = new URL(url);
+                
+                if(faviconUrl.startsWith('/')){
+                    faviconUrl = `${urlObj.protocol}//${urlObj.host}${faviconUrl}`;
+                }else{
+                    faviconUrl = `${urlObj.protocol}//${urlObj.host}/${faviconUrl}`;
+                }
+            }
+            console.log(urlObj);
+            metadata.favicon = faviconUrl;
+        }else{
+            const urlObj = new URL(url);
+            metadata.favicon = `${urlObj.protocol}//${urlObj.host}/favicon.ico`;
+        }
+
+        const ogSite = root.querySelector('meta[property="og:site_name"]');
+        if(ogSite){
+            metadata.siteName = ogSite.getAttribute('content');
+        }else{
+            const urlObj = new URL(url);
+            metadata.siteName = urlObj.hostname.replace('www.', '');
+        }
+
+        if(url.includes('youtube.com/watch') || url.includes('youtu.be/')){
+            let videoId = '';
+            if(url.includes('youtube.com/watch')){
+                videoId = new URL(url).searchParams.get('v');
+            }else if(url.includes('youtu.be/')){
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            }
+
+            if(videoId){
+                metadata.image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+            }
+        }
+
+        res.json({
+            success: true,
+            metadata
+        })
+    } catch (error) {
+        console.error('Error extracting metadata:', error);
+        res.status(500).json({ error: 'Failed to extract metadata' });
     }
 }
