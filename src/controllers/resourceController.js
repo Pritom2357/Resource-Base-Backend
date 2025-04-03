@@ -224,6 +224,28 @@ export async function extractUrlMetadata(req, res) {
             });
         }
 
+        if(url.includes('youtube.com/watch') || url.includes('youtu.be/')){
+            let videoId = '';
+            if(url.includes('youtube.com/watch')){
+                videoId = new URL(url).searchParams.get('v');
+            } else if(url.includes('youtu.be/')){
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            }
+            
+            if(videoId){
+                return res.json({
+                    success: true,
+                    metadata: {
+                        title: "YouTube Video",
+                        description: "",
+                        image: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                        favicon: "https://www.youtube.com/favicon.ico",
+                        siteName: "YouTube"
+                    }
+                });
+            }
+        }
+
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -268,7 +290,6 @@ export async function extractUrlMetadata(req, res) {
                     faviconUrl = `${urlObj.protocol}//${urlObj.host}/${faviconUrl}`;
                 }
             }
-            // console.log(urlObj);
             metadata.favicon = faviconUrl;
         }else{
             const urlObj = new URL(url);
@@ -281,19 +302,6 @@ export async function extractUrlMetadata(req, res) {
         }else{
             const urlObj = new URL(url);
             metadata.siteName = urlObj.hostname.replace('www.', '');
-        }
-
-        if(url.includes('youtube.com/watch') || url.includes('youtu.be/')){
-            let videoId = '';
-            if(url.includes('youtube.com/watch')){
-                videoId = new URL(url).searchParams.get('v');
-            }else if(url.includes('youtu.be/')){
-                videoId = url.split('youtu.be/')[1].split('?')[0];
-            }
-
-            if(videoId){
-                metadata.image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-            }
         }
 
         res.json({
