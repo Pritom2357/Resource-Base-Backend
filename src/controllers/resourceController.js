@@ -268,7 +268,7 @@ export async function extractUrlMetadata(req, res) {
                     faviconUrl = `${urlObj.protocol}//${urlObj.host}/${faviconUrl}`;
                 }
             }
-            console.log(urlObj);
+            // console.log(urlObj);
             metadata.favicon = faviconUrl;
         }else{
             const urlObj = new URL(url);
