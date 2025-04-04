@@ -611,3 +611,26 @@ export async function getBookmarkStatus(userId, postId) {
         throw error;
     }
 }
+
+export async function getUserResourceCount(userId) {
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM resource_posts WHERE user_id = $1',
+      [userId]
+    );
+    return result.rows[0] || { count: 0 };
+  } catch (error) {
+    console.error('Error getting user resource count:', error);
+    throw error;
+  }
+}
+
+export async function getUserTotalUpvotes(userId) {
+  const result = await pool.query(`
+    SELECT COUNT(*) as count 
+    FROM votes v
+    JOIN resource_posts r ON v.resource_id = r.id
+    WHERE r.user_id = $1 AND v.vote_type = 'up'
+  `, [userId]);
+  return parseInt(result.rows[0]?.count || 0);
+}
