@@ -12,6 +12,7 @@ router.put('/profile', authenticateToken, trackUserActivity, userController.upda
 // Public routes
 router.get('/:username', userController.getPublicProfile); 
 router.get('/:username/resources', userController.getUserResources);
+router.get('/:username/tags/viewed', userController.getUserViewedTags);
 
 router.post('/activity-ping', authenticateToken, trackUserActivity, (req, res) => {
   res.status(200).json({ success: true });

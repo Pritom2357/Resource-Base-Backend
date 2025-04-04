@@ -152,3 +152,23 @@ export async function trackUserActivity(req, res, next) {
         next();
     }
 }
+
+export async function getUserViewedTags(req, res) {
+    try {
+        const {username} = req.params;
+        const user = await userModel.findUserByUsername(username);
+
+        if(!user){
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const viewedTags = await userModel.getUserViewedTags(user.id);
+
+        res.json(viewedTags);
+    } catch (error) {
+        console.error('Error fetching user viewed tags:', error);
+        res.status(500).json({ error: 'Failed to fetch user viewed tags' });
+    }
+}
