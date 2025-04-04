@@ -23,7 +23,14 @@ router.put('/:id', authenticateToken, trackUserActivity, resourceController.upda
 router.post('/:id/vote', authenticateToken, trackUserActivity, resourceController.voteOnResource);
 router.post('/:id/bookmark', authenticateToken, trackUserActivity, resourceController.toggleBookmark);
 router.post('/:id/comment', authenticateToken, trackUserActivity, resourceController.addComment);
-router.post('/:id/view', resourceController.recordView); 
+router.post('/:id/view', (req, res, next) => {
+    authenticateToken(req, res, (err) => {
+        if (err) {
+            req.user = null;
+        }
+        next();
+    });
+}, resourceController.recordView); 
 
 export default router;
 
