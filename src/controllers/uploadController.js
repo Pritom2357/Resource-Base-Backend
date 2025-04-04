@@ -1,6 +1,6 @@
 import cloudinary from "../config/cloudinaryConfig.js";
 import multer from 'multer';
-import * as userModel from '../models/userModel'
+import * as userModel from '../models/userModel.js'
 
 const storage = multer.memoryStorage();
 const upload = multer({
