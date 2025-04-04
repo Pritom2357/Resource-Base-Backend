@@ -21,4 +21,7 @@ router.post('/activity-ping', authenticateToken, trackUserActivity, (req, res) =
   res.status(200).json({ success: true });
 });
 
+// Add this route
+router.get('/recalculate-badges', authenticateToken, badgeController.recalculateAllBadges);
+
 export default router;
