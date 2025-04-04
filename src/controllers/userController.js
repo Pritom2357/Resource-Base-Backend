@@ -19,8 +19,8 @@ export async function getProfile(req, res) {
             fullname: user.fullname,
             description: user.description,
             photo: user.photo,
-            location: user.location, // Add location field
-            social_links: user.social_links, // This is already handled as JSON
+            location: user.location, 
+            social_links: user.social_links, 
             created_at: user.created_at,
             updated_at: user.updated_at,
             last_login: user.last_login
@@ -135,5 +135,20 @@ export async function getUserResources(req, res) {
     } catch (error) {
         console.error('Error fetching user resources:', error);
         res.status(500).json({ error: 'Failed to fetch user resources' });
+    }
+}
+
+export async function trackUserActivity(req, res, next) {
+    try {
+        if(req.user && req.user.id){
+            userModel.updateLastActive(req.user.id).catch(err => {
+                console.error("Error updating last active status: ", err);
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error('Activity tracking error:', error);
+        next();
     }
 }

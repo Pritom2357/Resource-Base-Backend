@@ -313,3 +313,19 @@ export async function extractUrlMetadata(req, res) {
         res.status(500).json({ error: 'Failed to extract metadata' });
     }
 }
+
+export async function recordView(req, res) {
+    try {
+        const postId = req.params.id;
+        const userId = req.user ? req.user.id : null;
+
+        await resourceModel.incrementViewCount(postId, userId);
+
+        res.json({
+            success: true
+        });
+    } catch (error) {
+        console.error('Error recording view:', error);
+        res.status(500).json({ error: 'Failed to record view' });
+    }
+}

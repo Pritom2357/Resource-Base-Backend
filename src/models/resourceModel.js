@@ -523,3 +523,43 @@ export async function checkSimilarResources(url) {
         throw error;
     }
 }
+
+export async function incrementViewCount(postId, userId = null) {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            `UPDATE resource_posts
+            SET view_count = view_count + 1
+            WHERE id = $1`,
+            [postId]
+        );
+
+        if(userId){
+            const viewId = uuidv4();
+            const viewExists = await client.query(
+                `SELECT id FROM resource_views
+                WHERE resource_id = $1 AND user_id = $2`,
+                [postId, userId]
+            );
+
+            if(viewExists.rows.length === 0){
+                await client.query(
+                    `INSERT INTO resource_views (id, resource_id, user_id, viewed_at) VALUES ($1, $2, $3, NOW())`,
+                    [viewId, postId, userId]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        return {success: true};
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error incrementing view count:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}

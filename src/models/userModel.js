@@ -68,3 +68,19 @@ export async function updateUser(userId, userData) {
     const result = await pool.query(query, values);
     return result.rows[0];
 }
+
+export async function updateLastActive(userId) {
+  try {
+    const query = `
+      UPDATE users
+      SET last_login = NOW()
+      WHERE id = $1
+    `;
+
+    await pool.query(query, [userId]);
+    return true;
+  } catch (error) {
+    console.error("Error updating last active status:", error);
+    return false;
+  }
+}
