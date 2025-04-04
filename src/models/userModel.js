@@ -42,9 +42,21 @@ export async function createOAuthUser(userData) {
 }
 
 export async function findUserByUsername(username) {
-  const query = "SELECT * FROM users WHERE username = $1";
-  const result = await pool.query(query, [username]);
-  return result.rows[0];
+    try {
+        // Make sure to explicitly include created_at in your query
+        const query = `
+            SELECT id, username, email, fullname, description, photo, 
+                   location, social_links, created_at, updated_at, last_login
+            FROM users
+            WHERE username = $1
+        `;
+        
+        const result = await pool.query(query, [username]);
+        return result.rows[0] || null;
+    } catch (error) {
+        console.error('Error finding user by username:', error);
+        throw error;
+    }
 }
 
 export async function updateUser(userId, userData) {
