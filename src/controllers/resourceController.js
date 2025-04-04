@@ -329,3 +329,31 @@ export async function recordView(req, res) {
         res.status(500).json({ error: 'Failed to record view' });
     }
 }
+
+export async function getUserVote(req, res) {
+    try {
+        const postId = req.params.id;
+        const userId = req.user.id;
+
+        const result = await resourceModel.getUserVoteOnResource(userId, postId);
+        res.json(result);
+
+    } catch (error) {
+        console.error('Error getting user vote:', error);
+        res.status(500).json({ error: 'Failed to get user vote' });
+    }
+}
+
+export async function getBookmarkStatus(req, res) {
+    try {
+        
+        const postId = req.params.id;
+        const userId = req.user.id;
+
+        const result = await resourceModel.getBookmarkStatus(userId, postId);
+        res.json(result);
+    } catch (error) {
+        console.error('Error checking bookmark status:', error);
+        res.status(500).json({ error: 'Failed to check bookmark status' });
+    }
+}

@@ -571,3 +571,43 @@ export async function incrementViewCount(postId, userId = null) {
         client.release();
     }
 }
+
+export async function getUserVoteOnResource(userId, postId) {
+    try {
+        const query = `
+            SELECT vote_type
+            FROM votes
+            WHERE user_id = $1 AND resource_id = $2
+        `;
+
+        const result = await pool.query(query, [userId, postId]);
+
+        if(result.rows.length === 0){
+            return {voteType: null};
+        }
+
+        return {
+            voteType: result.rows[0].vote_type
+        }
+    } catch (error) {
+        console.error("Error getting user vote:", error);
+        throw error;
+    }
+}
+
+export async function getBookmarkStatus(userId, postId) {
+    try {
+        const query = `
+            SELECT id
+            FROM bookmarks
+            WHERE user_id = $1 AND resource_id = $2
+        `;
+
+        const result = await pool.query(query, [userId, postId]);
+
+        return {isBookmarked: result.rows.length > 0};
+    } catch (error) {
+        console.error("Error checking bookmark status:", error);
+        throw error;
+    }
+}

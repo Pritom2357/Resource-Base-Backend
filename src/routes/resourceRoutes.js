@@ -1,7 +1,7 @@
 import express from 'express';
 import * as resourceController from '../controllers/resourceController.js';
 import {authenticateToken} from '../middleware/authMiddleware.js';
-import {trackUserActivity} from '../controllers/userController.js'; // Add this import
+import {trackUserActivity} from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -17,6 +17,8 @@ router.get('/:id/comments', resourceController.getResourceComments);
 
 // Protected routes - apply both middlewares
 router.post('/', authenticateToken, trackUserActivity, resourceController.createResource);
+router.get('/:id/user-vote', authenticateToken, resourceController.getUserVote);
+router.get('/:id/bookmark-status', authenticateToken, resourceController.getBookmarkStatus)
 router.put('/:id', authenticateToken, trackUserActivity, resourceController.updateResource);
 router.post('/:id/vote', authenticateToken, trackUserActivity, resourceController.voteOnResource);
 router.post('/:id/bookmark', authenticateToken, trackUserActivity, resourceController.toggleBookmark);
