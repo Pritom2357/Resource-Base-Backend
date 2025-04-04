@@ -75,8 +75,9 @@ export async function updateLastActive(userId) {
       UPDATE users
       SET last_login = NOW()
       WHERE id = $1
+      AND (last_login IS NULL OR NOW() - last_login > INTERVAL '5 minutes')
     `;
-
+    
     await pool.query(query, [userId]);
     return true;
   } catch (error) {
