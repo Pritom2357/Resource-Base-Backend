@@ -1,5 +1,6 @@
 import * as userModel from '../models/userModel.js';
 import * as resourceModel from '../models/resourceModel.js';
+import * as uploadController from '../controllers/uploadController.js';
 
 export async function getProfile(req, res) {
     try {

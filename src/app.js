@@ -16,6 +16,7 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 import configurePassport from './config/passport.js';
 import authConfig from './config/auth.js';
+import cloudinary from './config/cloudinaryConfig.js';
 // import auth from './config/auth.js';
 
 const app = express();
