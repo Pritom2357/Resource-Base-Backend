@@ -2,6 +2,7 @@ import express from 'express';
 import * as resourceController from '../controllers/resourceController.js';
 import {authenticateToken} from '../middleware/authMiddleware.js';
 import {trackUserActivity} from '../controllers/userController.js';
+import { checkResourceCreatorBadges } from '../controllers/badgeController.js';
 
 const router = express.Router();
 
@@ -16,14 +17,19 @@ router.get('/:id', resourceController.getResource);
 router.get('/:id/comments', resourceController.getResourceComments);
 
 // Protected routes - apply both middlewares
-router.post('/', authenticateToken, trackUserActivity, resourceController.createResource);
+router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
 router.get('/:id/user-vote', authenticateToken, resourceController.getUserVote);
 router.get('/:id/bookmark-status', authenticateToken, resourceController.getBookmarkStatus)
 router.put('/:id', authenticateToken, trackUserActivity, resourceController.updateResource);
 router.post('/:id/vote', authenticateToken, trackUserActivity, resourceController.voteOnResource);
 router.post('/:id/bookmark', authenticateToken, trackUserActivity, resourceController.toggleBookmark);
 router.post('/:id/comment', authenticateToken, trackUserActivity, resourceController.addComment);
-router.post('/:id/view', resourceController.recordView); 
+router.post('/:id/view', (req, res, next) => {
+    // Try to authenticate but continue even if it fails
+    authenticateToken(req, res, (err) => {
+        next();
+    });
+}, resourceController.recordView); 
 
 export default router;
 

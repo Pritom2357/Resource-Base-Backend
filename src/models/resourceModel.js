@@ -611,3 +611,16 @@ export async function getBookmarkStatus(userId, postId) {
         throw error;
     }
 }
+
+export async function getUserResourceCount(userId) {
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM resource_posts WHERE user_id = $1',
+      [userId]
+    );
+    return result.rows[0] || { count: 0 };
+  } catch (error) {
+    console.error('Error getting user resource count:', error);
+    throw error;
+  }
+}
