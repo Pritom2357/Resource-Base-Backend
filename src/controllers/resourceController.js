@@ -83,16 +83,6 @@ export async function updateResource(req, res) {
     }
 }
 
-async function checkUpvoteBadges(userId) {
-    const upvoteCount = await resourceModel.getUserTotalUpvotes(userId);
-    for(const level of ['BRONZE', 'SILVER', 'GOLD']) {
-        const badge = BADGE_TYPES.UPVOTED[level];
-        if(upvoteCount >= badge.requirement) {
-            await badgeModel.awardBadge(userId, 'UPVOTED', level);
-        }
-    }
-}
-
 export async function voteOnResource(req, res) {
     try {
         const {voteType} = req.body;
@@ -106,11 +96,6 @@ export async function voteOnResource(req, res) {
         }
 
         const result = await resourceModel.voteOnPost(userId, postId, voteType);
-        
-        if(voteType === 'up') {
-            await checkUpvoteBadges(userId);
-        }
-
         res.json(result);
     } catch (error) {
         console.error('Error voting on resource:', error);

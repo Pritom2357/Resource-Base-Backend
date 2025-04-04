@@ -85,25 +85,3 @@ export async function updateLastActive(userId) {
     return false;
   }
 }
-
-export async function getUserViewedTags(userId) {
-  try {
-    const query = `
-      SELECT t.tag_name, COUNT(rv.id) as count
-      FROM resource_views rv
-      JOIN resource_posts rp ON rv.resource_id = rp.id
-      JOIN resource_tags rt ON rp.id = rt.post_id
-      JOIN tags t ON rt.tag_id = t.id
-      WHERE rv.user_id = $1
-      GROUP BY t.tag_name
-      ORDER BY count DESC
-      LIMIT 20
-    `;
-
-    const result = await pool.query(query, [userId]);
-    return result.rows;
-  } catch (error) {
-    console.error("Error getting user viewed tags:", error);
-    throw error;
-  }
-}
