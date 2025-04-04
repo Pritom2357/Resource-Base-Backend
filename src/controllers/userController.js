@@ -106,7 +106,7 @@ export async function getPublicProfile(req, res) {
             updated_at: user.updated_at, 
             last_login: user.last_login 
         };
-        console.log(publicUserData);
+        // console.log(publicUserData);
         
 
         res.json(publicUserData);
