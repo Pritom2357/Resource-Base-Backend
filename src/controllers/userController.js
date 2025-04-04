@@ -100,12 +100,14 @@ export async function getPublicProfile(req, res) {
             fullname: user.fullname,
             description: user.description,
             photo: user.photo,
-            location: user.location, // Add location field
-            social_links: user.social_links, // This is already handled as JSON
+            location: user.location, 
+            social_links: user.social_links || [], 
             created_at: user.created_at,
-            updated_at: user.updated_at, // Add updated_at timestamp
-            last_login: user.last_login // Include last_login if available
+            updated_at: user.updated_at, 
+            last_login: user.last_login 
         };
+        console.log(publicUserData);
+        
 
         res.json(publicUserData);
     } catch (error) {
