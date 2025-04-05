@@ -38,7 +38,7 @@ export async function getProfile(req, res) {
 export async function updateProfile(req, res) {
     try {
         const userId = req.user.id;
-        const {username, fullname, description, photo, social_links} = req.body;
+        const {username, fullname, description, photo, social_links, location} = req.body;
 
         const existingUser = await userModel.findUserById(userId);
 
@@ -100,7 +100,8 @@ export async function updateProfile(req, res) {
             fullname,
             description,
             photo,
-            social_links: socialLinksJson
+            social_links: socialLinksJson,
+            location
         });
 
         const safeUserData = {
@@ -111,6 +112,7 @@ export async function updateProfile(req, res) {
             description: updateUser.description,
             photo: updateUser.photo,
             social_links: updateUser.social_links,
+            location: updateUser.location,
             created_at: updateUser.created_at,
             updated_at: updateUser.updated_at
         };

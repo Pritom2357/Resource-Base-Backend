@@ -48,7 +48,7 @@ export async function findUserByUsername(username) {
 }
 
 export async function updateUser(userId, userData) {
-  const {username, fullname, description, photo, social_links} = userData;
+  const {username, fullname, description, photo, social_links, location} = userData;
 
   const query = `
     UPDATE users
@@ -58,12 +58,13 @@ export async function updateUser(userId, userData) {
       description = COALESCE($3, description),
       photo = COALESCE($4, photo),
       social_links = COALESCE($5, social_links),
+      location = COALESCE($6, location),
       updated_at = NOW()
-    WHERE id = $6
+    WHERE id = $7
     RETURNING *
     `;
 
-    const values = [username, fullname, description, photo, social_links, userId];
+    const values = [username, fullname, description, photo, social_links, location, userId];
 
     const result = await pool.query(query, values);
     return result.rows[0];
