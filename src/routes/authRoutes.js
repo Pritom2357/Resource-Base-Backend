@@ -11,7 +11,7 @@ router.post('/login', authController.login);
 router.post('/token', authController.refreshToken);
 router.post('/logout', authController.logout);
 router.post('/logout/all', authenticateToken, authController.logoutAll);
-router.post('/change-password', authController, authController.changePassword);
+router.post('/change-password', authenticateToken, authController.changePassword);
 
 router.get('/google', passport.authenticate('google', {scope: ['profile', 'email']}));
 router.get('/google/callback', 
