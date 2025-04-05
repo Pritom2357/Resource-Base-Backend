@@ -57,6 +57,8 @@ export async function updateProfile(req, res) {
             }
         }
 
+        console.log(req.body.social_links);
+        
         if(req.body.social_links && req.body.social_links === 'string'){
             try {
                 req.body.social_links = JSON.parse(req.body.social_links);
@@ -64,6 +66,8 @@ export async function updateProfile(req, res) {
                 req.body.social_links = []
             }
         }
+
+        console.log(req.body.social_links);
 
         const updateUser = await userModel.updateUser(userId, {
             username,
