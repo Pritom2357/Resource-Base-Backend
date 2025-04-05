@@ -407,9 +407,11 @@ export async function searchResources(searchTerm, limit=20) {
     (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
     (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
-    u.username as author_username
+    u.username as author_username,
+    c.name as category_name
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
+    LEFT JOIN categories c ON r.category_id = c.id
     WHERE 
         r.post_title ILIKE $1 OR
         r.post_description ILIKE $1 OR
@@ -633,11 +635,13 @@ export async function searchResourcesByTag(tagName, limit=20) {
     (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
     u.username as author_username,
+    c.name as category_name,
     (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
      WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
+    LEFT JOIN categories c ON r.category_id = c.id
     WHERE EXISTS (
         SELECT 1 FROM tags t
         JOIN resource_tags rt ON rt.tag_id = t.id
@@ -661,11 +665,13 @@ export async function searchResourcesByCategory(categoryId, limit=20) {
     (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
     u.username as author_username,
+    c.name as category_name, 
     (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
      WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
+    LEFT JOIN categories c ON r.category_id = c.id
     WHERE r.category_id = $1
     ORDER BY 
         (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 

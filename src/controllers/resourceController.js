@@ -38,16 +38,26 @@ export async function getResource(req, res) {
 
 export async function createResource(req, res) {
     try {
-        const {postTitle, postDescription, category, resources, tags} = req.body;
+        const {postTitle, postDescription, category, resources, tags, category_id} = req.body;
         const userId = req.user.id;
 
-        const result = await resourceModel.createPost({
+        let category_name = 'Uncategorized';
+        if (category_id) {
+            const categoryResult = await pool.query('SELECT name FROM categories WHERE id = $1', [category_id]);
+            if (categoryResult.rows.length > 0) {
+                category_name = categoryResult.rows[0].name;
+            }
+        }
+
+        const result = await resourceModel.createResource({
             postTitle,
             postDescription,
             userId,
             category,
             resources,
-            tags
+            tags,
+            category_id,
+            category_name
         });
 
         res.status(201).json(result);
