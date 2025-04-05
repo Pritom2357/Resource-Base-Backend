@@ -1,6 +1,7 @@
 import * as resourceModel from '../models/resourceModel.js';
 import { parse } from 'node-html-parser';
 import fetch from 'node-fetch'
+import pool from '../config/db.js';
 
 export async function getResources(req, res) {
     try {
