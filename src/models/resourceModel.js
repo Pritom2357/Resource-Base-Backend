@@ -11,6 +11,12 @@ export async function getResources(limit=20, offset=0, sortBy='vote_count') {
 
     const sortOption = validSortOptions[sortBy] || validSortOptions['vote_count'];
 
+    const countQuery = `SELECT COUNT(*) FROM resource_posts`;
+    const countResult = await pool.query(countQuery);
+    const totalCount = parseInt(countResult.rows[0].count);
+    
+    const totalPages = Math.ceil(totalCount / limit);
+
     const query = `
     SELECT r.*,
     (SELECT COUNT(*) FROM votes v WHERE v.resource_id=r.id AND vote_type='up') - 
@@ -28,7 +34,16 @@ export async function getResources(limit=20, offset=0, sortBy='vote_count') {
     `;
 
     const result = await pool.query(query, [limit, offset]);
-    return result.rows;
+    
+    return {
+        resources: result.rows,
+        pagination: {
+            totalCount,
+            totalPages,
+            currentPage: Math.floor(offset / limit) + 1,
+            pageSize: limit
+        }
+    };
 }
 
 export async function createPost(postData) {

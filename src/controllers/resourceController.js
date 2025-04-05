@@ -10,9 +10,8 @@ export async function getResources(req, res) {
         const offset = parseInt(req.query.offset) || 0;
         const sortBy = req.query.sortBy || 'vote_count';
 
-        const resources = await resourceModel.getResources(limit, offset, sortBy);
-
-        res.json(resources);
+        const result = await resourceModel.getResources(limit, offset, sortBy);
+        res.json(result); 
     } catch (error) {
         console.error("Error fetching resources: ", error);
         res.status(500).json({
