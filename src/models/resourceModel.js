@@ -682,3 +682,33 @@ export async function searchResourcesByCategory(categoryId, limit=20) {
     const result = await pool.query(query, [categoryId, limit]);
     return result.rows;
 }
+
+export async function getUserBookmarks(userId) {
+    try {
+        const query = `
+        SELECT 
+            r.*,
+            c.name as category_name,
+            (SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'up') - 
+            (SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'down') as vote_count,
+            (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+            (SELECT COUNT(*) FROM bookmarks WHERE resource_id = r.id) as bookmark_count,
+            u.username as author_username,
+            (SELECT json_agg(t.tag_name) FROM resource_tags rt 
+             JOIN tags t ON rt.tag_id = t.id 
+             WHERE rt.post_id = r.id) as tags
+        FROM bookmarks b
+        JOIN resource_posts r ON b.resource_id = r.id
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN categories c ON r.category_id = c.id
+        WHERE b.user_id = $1
+        ORDER BY b.created_at DESC
+        `;
+        
+        const result = await pool.query(query, [userId]);
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching user bookmarks:', error);
+        throw error;
+    }
+}

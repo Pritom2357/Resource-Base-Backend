@@ -377,3 +377,16 @@ export async function getBookmarkStatus(req, res) {
         res.status(500).json({ error: 'Failed to check bookmark status' });
     }
 }
+
+export async function getUserBookmarks(req, res) {
+    try {
+        const userId = req.user.id;
+
+        const bookmarkedResources = await resourceModel.getUserBookmarks(userId);
+
+        res.json(bookmarkedResources);
+    } catch (error) {
+        console.error('Error fetching user bookmarks:', error);
+        res.status(500).json({ error: 'Failed to fetch bookmarks' });
+    }
+}
