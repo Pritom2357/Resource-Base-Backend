@@ -13,12 +13,14 @@ router.get('/tags/popular', resourceController.getPopularTags);
 router.get('/categories', resourceController.getCategories);
 router.get('/check-similarity', resourceController.checkSimilarity);
 router.get('/extract-metadata', resourceController.extractUrlMetadata);
+router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
+router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks); //protected
+
+
 router.get('/:id', resourceController.getResource);
 router.get('/:id/comments', resourceController.getResourceComments);
 
 // Protected routes - apply both middlewares
-router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
-router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks);
 router.get('/:id/user-vote', authenticateToken, resourceController.getUserVote);
 router.get('/:id/bookmark-status', authenticateToken, resourceController.getBookmarkStatus);
 router.put('/:id', authenticateToken, trackUserActivity, resourceController.updateResource);
