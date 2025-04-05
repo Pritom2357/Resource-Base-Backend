@@ -59,11 +59,23 @@ export async function updateProfile(req, res) {
 
         console.log(req.body.social_links);
         
-        if(req.body.social_links && req.body.social_links === 'string'){
-            try {
-                req.body.social_links = JSON.parse(req.body.social_links);
-            } catch (error) {
-                req.body.social_links = []
+        if(req.body.social_links){
+            if(typeof req.body.social_links === 'string'){
+                try {
+                    req.body.social_links = JSON.parse(req.body.social_links);
+                } catch (error) {
+                    req.body.social_links = []
+                }
+            }
+
+            if(Array.isArray(req.body.social_links)){
+                try {
+                    const jsonString = JSON.stringify(req.body.social_links);
+                    JSON.parse(jsonString);
+                } catch (error) {
+                    console.error('Invalid social_links JSON structure:', error);
+                    req.body.social_links = [];
+                }
             }
         }
 
