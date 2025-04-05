@@ -107,3 +107,15 @@ export async function getUserViewedTags(userId) {
         return [];
     }
 }
+
+export async function updatePassword(userId, newPasswordHash) {
+  const query = `
+    UPDATE users
+    SET password_hash = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING id, username, email
+  `;
+
+  const result = await pool.query(query, [newPasswordHash, userId]);
+  return result.rows[0];
+}

@@ -1,6 +1,7 @@
 import * as userModel from '../models/userModel.js';
 import * as resourceModel from '../models/resourceModel.js';
 import * as uploadController from '../controllers/uploadController.js';
+import bcrypt from 'bcrypt'
 
 export async function getProfile(req, res) {
     try {
@@ -209,4 +210,5 @@ export async function getUserViewedTags(req, res) {
         console.error('Error fetching user viewed tags:', error);
         res.status(500).json({ error: 'Failed to fetch user viewed tags' });
     }
-}
+};
+

@@ -25,7 +25,6 @@ router.post('/:id/vote', authenticateToken, trackUserActivity, resourceControlle
 router.post('/:id/bookmark', authenticateToken, trackUserActivity, resourceController.toggleBookmark);
 router.post('/:id/comment', authenticateToken, trackUserActivity, resourceController.addComment);
 router.post('/:id/view', (req, res, next) => {
-    // Try to authenticate but continue even if it fails
     authenticateToken(req, res, (err) => {
         next();
     });

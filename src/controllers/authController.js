@@ -213,3 +213,52 @@ export async function githubCallback(req, res) {
     }
 }
 
+
+export async function changePassword(req, res) {
+    try {
+        const userId = req.user.id;
+        const {currentPassword, newPassword} = req.body;
+
+        if(!currentPassword || !newPassword){
+            return res.status(400).json({
+                error: "Both current and new Password are required"
+            });
+        }
+
+        if(newPassword.length < 8){
+            return res.status(400).json({
+                error: "New password must be at least 8 characters long"
+            });
+        }
+
+        const user = await userModel.findUserById(userId);
+        if(!user){
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        if(!passwordMatch){
+            return res.status(401).json({
+                error: "Current password is incorrect"
+            });
+        }
+
+        const saltRounds = 10;
+        const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+        await userModel.updatePassword(userId, newPasswordHash);
+
+        res.status(200).json({
+            success: true,
+            message: "Password updated successfully"
+        });
+    } catch (error) {
+        console.error("Password change error:", error);
+        res.status(500).json({
+            error: "Failed to change password",
+            message: error.message
+        });
+    }
+}
