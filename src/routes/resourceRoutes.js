@@ -18,9 +18,9 @@ router.get('/:id/comments', resourceController.getResourceComments);
 
 // Protected routes - apply both middlewares
 router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
+router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks);
 router.get('/:id/user-vote', authenticateToken, resourceController.getUserVote);
 router.get('/:id/bookmark-status', authenticateToken, resourceController.getBookmarkStatus);
-router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks);
 router.put('/:id', authenticateToken, trackUserActivity, resourceController.updateResource);
 router.post('/:id/vote', authenticateToken, trackUserActivity, resourceController.voteOnResource);
 router.post('/:id/bookmark', authenticateToken, trackUserActivity, resourceController.toggleBookmark);
