@@ -2,6 +2,7 @@ import * as resourceModel from '../models/resourceModel.js';
 import { parse } from 'node-html-parser';
 import fetch from 'node-fetch'
 import pool from '../config/db.js';
+import { calculateSimilarity } from '../utils/stringUtils.js';
 
 export async function getResources(req, res) {
     try {
@@ -388,5 +389,60 @@ export async function getUserBookmarks(req, res) {
     } catch (error) {
         console.error('Error fetching user bookmarks:', error);
         res.status(500).json({ error: 'Failed to fetch bookmarks' });
+    }
+}
+
+export async function findOrCreateTag(req, res) {
+    try {
+        const {tagName} = req.body;
+
+        if(!tagName || typeof tagName !== 'string'){
+            return res.status(400).json({
+                error: "Tag name is required"
+            });
+        }
+
+        const normalizedTag = tagName.toLowerCase().trim();
+
+        const exactMatch = await resourceModel.findTagByName(normalizedTag);
+
+        if(exactMatch){
+            return res.json({
+                tag: exactMatch,
+                status: 'exact_match'
+            });
+        }
+
+        const similarTags = await resourceModel.findSimilarTags(normalizedTag);
+
+        const tagSimilarities = similarTags.map(tag=>{
+            const similarity = calculateSimilarity(normalizedTag, tag.tag_name.toLowerCase());
+            return {
+                ...tag,
+                similarity: parseFloat(similarity.toFixed(2))
+            };
+        });
+
+        const highSimilarityTags = tagSimilarities.filter(tag => tag.similarity >= 0.8);
+
+        if(highSimilarityTags.length > 0){
+            return res.json({
+                similarTags: highSimilarityTags,
+                status: 'similar_found',
+                originalTag: normalizedTag
+            });
+        }
+
+        const newTag = await resourceModel.createTag(normalizedTag);
+
+        res.json({
+            tag: newTag,
+            status: 'created'
+        });
+    } catch (error) {
+        console.error("Error in tag management: ", error);
+        res.status(500).json({
+            error: "Failed to process tag"
+        });
     }
 }

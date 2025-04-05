@@ -712,3 +712,38 @@ export async function getUserBookmarks(userId) {
         throw error;
     }
 }
+
+export async function findTagByName(tagName) {
+    const query = `
+        SELECT * FROM tags
+        WHERE tag_name = $1
+    `;
+
+    const result = await pool.query(query, [tagName]);
+    return result.rows[0];
+}
+
+export async function findSimilarTags(tagName) {
+    const query = `
+        SELECT * FROM tags
+        WHERE tag_name ILIKE $1
+        OR SIMILARITY(tag_name, $2) > 0.3
+        LIMIT 10
+    `;
+
+    const searchPattern = `%${tagName}%`;
+    const result = await pool.query(query, [searchPattern, tagName]);
+    return result.rows;
+}
+
+export async function createTag(tagName) {
+    const id = uuidv4();
+    const query = `
+        INSERT INTO tags (id, tag_name)
+        VALUES ($1, $2)
+        RETURNING *
+    `;
+
+    const result = await pool.query(query, [id, tagName]);
+    return result.rows[0];
+}

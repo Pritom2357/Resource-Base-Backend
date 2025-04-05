@@ -15,6 +15,7 @@ router.get('/check-similarity', resourceController.checkSimilarity);
 router.get('/extract-metadata', resourceController.extractUrlMetadata);
 router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
 router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks); //protected
+router.post('/tags/find-or-create', authenticateToken, resourceController.findOrCreateTag);
 
 
 router.get('/:id', resourceController.getResource);
