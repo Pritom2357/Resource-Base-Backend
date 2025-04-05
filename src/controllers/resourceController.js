@@ -39,26 +39,29 @@ export async function getResource(req, res) {
 
 export async function createResource(req, res) {
     try {
-        const {postTitle, postDescription, category, resources, tags, category_id} = req.body;
+        const {postTitle, postDescription, category, resources, tags} = req.body;
         const userId = req.user.id;
 
         let category_name = 'Uncategorized';
-        if (category_id) {
-            const categoryResult = await pool.query('SELECT name FROM categories WHERE id = $1', [category_id]);
-            if (categoryResult.rows.length > 0) {
-                category_name = categoryResult.rows[0].name;
+        if (category) {
+            try {
+                const categoryResult = await pool.query('SELECT name FROM categories WHERE id = $1', [category]);
+                if (categoryResult.rows.length > 0) {
+                    category_name = categoryResult.rows[0].name;
+                }
+            } catch (err) {
+                console.error("Error fetching category name:", err);
             }
         }
 
-        const result = await resourceModel.createResource({
+        const result = await resourceModel.createPost({
             postTitle,
             postDescription,
             userId,
             category,
             resources,
             tags,
-            category_id,
-            category_name
+            category_name 
         });
 
         res.status(201).json(result);
