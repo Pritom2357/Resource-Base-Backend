@@ -154,17 +154,21 @@ export async function getResourceComments(req, res) {
 
 export async function searchResources(req, res) {
     try {
-        const {q} = req.query;
+        const {q, tag} = req.query;
         const limit = parseInt(req.query.limit) || 20;
         
-        if(!q){
+        let results;
+
+        if(tag){
+            results = await resourceModel.searchResourcesByTag(tag, limit);
+        } else if(q){
+            results = await resourceModel.searchResources(q, limit);
+        } else {
             return res.status(400).json({
-                error: "Search query 'q' is required to initiate search"
+                error: "Search query 'q' or 'tag' is required"
             });
         }
 
-        const results = await resourceModel.searchResources(q, limit);
-        
         res.json(results);
 
     } catch (error) {

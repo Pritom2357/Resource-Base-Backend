@@ -624,3 +624,31 @@ export async function getUserResourceCount(userId) {
     throw error;
   }
 }
+
+export async function searchResourcesByTag(tagName, limit=20) {
+    const query = `
+    SELECT r.*,
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+    (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+    (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+    u.username as author_username,
+    (SELECT json_agg(t.tag_name) FROM resource_tags rt
+     JOIN tags t ON rt.tag_id = t.id
+     WHERE rt.post_id = r.id) as tags
+    FROM resource_posts r
+    JOIN users u ON r.user_id = u.id
+    WHERE EXISTS (
+        SELECT 1 FROM tags t
+        JOIN resource_tags rt ON rt.tag_id = t.id
+        WHERE rt.post_id = r.id AND t.tag_name ILIKE $1
+    )
+    ORDER BY 
+        (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+        (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') DESC
+    LIMIT $2
+    `;
+
+    const result = await pool.query(query, [tagName, limit]);
+    return result.rows;
+}
