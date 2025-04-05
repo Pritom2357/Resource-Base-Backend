@@ -81,12 +81,26 @@ export async function updateProfile(req, res) {
 
         console.log(req.body.social_links);
 
+        if (Array.isArray(req.body.social_links)) {
+
+            const cleanLinks = req.body.social_links.map(link => {
+                return {
+                    name: String(link.name).trim(),
+                    url: link.url
+                };
+            });
+            
+            req.body.social_links = cleanLinks;
+        }
+
+        const socialLinksJson = JSON.stringify(req.body.social_links || []);
+
         const updateUser = await userModel.updateUser(userId, {
             username,
             fullname,
             description,
             photo,
-            social_links
+            social_links: socialLinksJson
         });
 
         const safeUserData = {
