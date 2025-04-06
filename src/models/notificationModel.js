@@ -61,7 +61,7 @@ export async function getUserNotifications(userId, limit=10, offset=0, includeRe
             query += ` AND n.is_read = false`;
         }
 
-        query = ` ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`;
+        query += ` ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`;
 
         const result = await pool.query(query, [userId, limit, offset]);
 
@@ -85,7 +85,7 @@ export async function markAsRead(notificationId, userId) {
         const query = `
             UPDATE notifications
             SET is_read = true
-            WHERE notification_id = $1 AND recipient_id = $2
+            WHERE id = $1 AND recipient_id = $2
             RETURNING *
         `;
 
