@@ -16,6 +16,7 @@ router.get('/extract-metadata', resourceController.extractUrlMetadata);
 router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
 router.get('/bookmarks', authenticateToken, resourceController.getUserBookmarks); //protected
 router.post('/tags/find-or-create', authenticateToken, resourceController.findOrCreateTag);
+router.get('/personalized', authenticateToken, resourceController.getPersonalizedResources);
 
 
 router.get('/:id', resourceController.getResource);

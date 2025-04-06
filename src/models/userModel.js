@@ -171,3 +171,56 @@ export async function getAllUsers(limit = 20, offset = 0) {
     throw error;
    }
 }
+
+export async function updateUserPreferences(userId, tags, categories) {
+  try {
+    await pool.query('DELETE FROM user_preferences WHERE user_id = $1', [userId]);
+
+    if(tags && tags.length > 0){
+      for(const tagName of tags){
+        await pool.query(
+          'INSERT INTO user_preferences (user_id, type, preference_value) VALUES ($1, $2, $3)', [userId, 'tag', tagName]
+        );
+      }
+    }
+
+    if(categories && categories.length > 0){
+      for(const categoryId of categories){
+        await pool.query(
+          'INSERT INTO user_preferences (user_id, type, preference_value) VALUES ($1, $2, $3)', [userId, 'category', categoryId]
+        );
+      }
+    }
+
+    return await getUserPreferences(userId);
+  } catch (error) {
+    console.error('Error updating user preferences:', error);
+    throw error;
+  }
+}
+
+export async function getUserPreferences(userId) {
+  try {
+    const result = await pool.query(
+      `SELECT type, preference_value FROM user_preferences WHERE user_id = $1`, [userId]
+    );
+
+    const preferences = {
+      tags: [],
+      categories: []
+    };
+
+    result.rows.forEach(row => {
+      if(row.type === 'tag'){
+        preferences.tags.push(row.preference_value);
+      }else if(row.type === 'category'){
+        preferences.categories.push(row.preference_value);
+      }
+    });
+
+    return preferences;
+  } catch (error) {
+    console.error('Error getting user preferences:', error);
+    return { tags: [], categories: [] };
+  }
+}

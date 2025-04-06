@@ -11,9 +11,12 @@ const router = express.Router();
 //protected routes
 router.get('/profile', authenticateToken, trackUserActivity, userController.getProfile);
 router.put('/profile', authenticateToken, trackUserActivity, userController.updateProfile);
+router.post('/preferences', authenticateToken, userController.savePreferences);
+router.get('/preferences', authenticateToken, userController.getUserPreferences);
 
 // Public routes
 router.get('/all', userController.getAllUsers);
+// router.post('/preferences', authenticateToken, userController)
 router.get('/:username', userController.getPublicProfile); 
 router.get('/:username/resources', userController.getUserResources);
 router.get('/:username/tags/viewed', userController.getUserViewedTags); 

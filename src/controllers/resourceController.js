@@ -445,3 +445,17 @@ export async function findOrCreateTag(req, res) {
         });
     }
 }
+
+export async function getPersonalizedResources(req, res) {
+    try {
+        const userId = req.user.id;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+        
+        const result = await resourceModel.getPersonalizedResources(userId, limit, offset);
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching personalized resources:', error);
+        res.status(500).json({ error: 'Failed to fetch personalized resources' });
+    }
+}

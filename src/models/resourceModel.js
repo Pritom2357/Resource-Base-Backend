@@ -762,3 +762,151 @@ export async function createTag(tagName) {
     const result = await pool.query(query, [id, tagName]);
     return result.rows[0];
 }
+
+export async function getPersonalizedResources(userId, limit=20, offset=0) {
+    try {
+        const preferencesQuery = `
+            SELECT type, preference_value
+            FROM user_preferences
+            WHERE user_id = $1
+        `;
+
+        const prefResult = await pool.query(preferencesQuery, [userId]);
+
+        let tagPreferences = [];
+        let categoryPreferences = [];
+
+        prefResult.rows.forEach(row => {
+            if(row.type === 'tag'){
+                tagPreferences.push(row.preference_value);
+            }else if(row.type === 'category'){
+                categoryPreferences.push(row.preference_value);
+            }
+        })
+
+        const viewedTagsQuery = `
+            SELECT t.tag_name
+            FROM resource_views rv
+            JOIN resource_posts rp ON rv.resource_id = rp.id
+            JOIN resource_tags rt ON rp.id = rt.post_id
+            JOIN tags t ON rt.tag_id = t.id
+            WHERE rv.user_id = $1
+            GROUP BY t.tag_name
+            ORDER BY COUNT(t.tag_name) DESC
+            LIMIT 5
+        `;
+
+        const viewedResult = await pool.query(viewedTagsQuery, [userId]);
+        const viewedTags = viewedResult.rows.map(row => row.tag_name);
+
+        const allTags = [...new Set([...tagPreferences, ...viewedTags])];
+
+        let query = `
+            SELECT r.*,
+            c.name as category_name,
+            (SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'up') - 
+            (SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'down') as vote_count,
+            (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+            (SELECT COUNT(*) FROM bookmarks WHERE resource_id = r.id) as bookmark_count,
+            u.username as author_username,
+            (SELECT json_agg(t.tag_name) FROM resource_tags rt 
+            JOIN tags t ON rt.tag_id = t.id 
+            WHERE rt.post_id = r.id) as tags
+            FROM resource_posts r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN categories c ON r.category_id = c.id
+            WHERE 1=1
+        `;
+
+        const queryParams = [];
+        let paramIndex = 1;
+
+        if(allTags.length > 0 || categoryPreferences.length > 0){
+            query += " AND (";
+
+            const conditions = [];
+
+            if(allTags.length > 0){
+                queryParams.push(allTags);
+                conditions.push(`EXISTS (
+                    SELECT 1 FROM resource_tags rt
+                    JOIN tags t ON rt.tag_id = t.id
+                    WHERE rt.post_id = r.id AND t.tag_name = ANY($${paramIndex++})
+                )`)
+            }
+
+            if(categoryPreferences.length > 0){
+                queryParams.push(categoryPreferences);
+                conditions.push(`r.category_id = ANY($${paramIndex++})`);
+            }
+
+            query += conditions.join(" OR ");
+            query += ")";
+        }
+
+        query += `
+            ORDER BY 
+                CASE WHEN EXISTS (
+                SELECT 1 FROM resource_views rv 
+                WHERE rv.resource_id = r.id AND rv.user_id = $${paramIndex++}
+                ) THEN 0 ELSE 1 END, 
+                vote_count DESC, 
+                created_at DESC
+            LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+            `;
+
+        console.log(query);
+        
+        
+        queryParams.push(userId, limit, offset);
+
+        let countQuery = `
+            SELECT COUNT(*) FROM resource_posts r
+            WHERE 1=1
+        `;
+
+        if(allTags.length > 0 || categoryPreferences.length > 0){
+            countQuery += " AND (";
+            
+            const countConditions = [];
+            
+            if(allTags.length > 0){
+                countConditions.push(`EXISTS (
+                    SELECT 1 FROM resource_tags rt
+                    JOIN tags t ON rt.tag_id = t.id
+                    WHERE rt.post_id = r.id AND t.tag_name = ANY($1)
+                )`);
+            }
+            
+            if(categoryPreferences.length > 0){
+                countConditions.push(`r.category_id = ANY($${allTags.length > 0 ? 2 : 1})`);
+            }
+            
+            countQuery += countConditions.join(" OR ");
+            countQuery += ")";
+
+            console.log(countQuery);
+            
+        }
+
+        const countParams = [];
+        if(allTags.length > 0) countParams.push(allTags);
+        if(categoryPreferences.length > 0) countParams.push(categoryPreferences);
+
+        const countResult = await pool.query(countQuery, countParams);
+        const result = await pool.query(query, queryParams);
+
+        return {
+        resources: result.rows,
+        pagination: {
+            totalCount: parseInt(countResult.rows[0].count),
+            totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit),
+            currentPage: Math.floor(offset / limit) + 1,
+            pageSize: limit
+            }
+        };
+    } catch (error) {
+        console.error('Error fetching personalized resources:', error);
+        throw error;
+    }
+}

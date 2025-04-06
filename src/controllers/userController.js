@@ -225,3 +225,37 @@ export async function getAllUsers(req, res) {
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 }
+
+export async function savePreferences(req, res) {
+    try {
+        const userId = req.user.id;
+        const {tags, categories} = req.body;
+
+        if((!tags || !Array.isArray(tags)) && (!categories || !Array.isArray(categories))){
+            return res.status(400).json({
+                error: "Tags or categories must be provided as an array"
+            });
+        }
+        const result = await userModel.updateUserPreferences(userId, tags, categories);
+
+        res.json({
+            success: true,
+            preferences: result
+        });
+    } catch (error) {
+        console.error('Error saving user preferences:', error);
+        res.status(500).json({ error: 'Failed to save preferences' });
+    }
+}
+
+export async function getUserPreferences(req, res) {
+    try {
+        const userId = req.user.id;
+        const preferences = await userModel.getUserPreferences(userId);
+
+        res.json(preferences);
+    } catch (error) {
+        console.error('Error fetching user preferences:', error);
+        res.status(500).json({ error: 'Failed to fetch preferences' });
+    }
+}
