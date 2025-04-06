@@ -8,7 +8,7 @@ export async function createNotification(data) {
 
     try {
         const query = `
-            INSERT INTO notifications (id, recipient_id, sender_id, notification_type, content, resourceId, is_read, created_at) 
+            INSERT INTO notifications (id, recipient_id, sender_id, notification_type, content, resource_id, is_read, created_at) 
             VALUES ($1, $2, $3, $4, $5, $6, false, NOW()) 
             RETURNING * 
         `;
