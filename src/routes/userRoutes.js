@@ -13,6 +13,7 @@ router.get('/profile', authenticateToken, trackUserActivity, userController.getP
 router.put('/profile', authenticateToken, trackUserActivity, userController.updateProfile);
 
 // Public routes
+router.get('/all', userController.getAllUsers);
 router.get('/:username', userController.getPublicProfile); 
 router.get('/:username/resources', userController.getUserResources);
 router.get('/:username/tags/viewed', userController.getUserViewedTags); 
