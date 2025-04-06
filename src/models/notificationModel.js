@@ -141,7 +141,7 @@ export async function createVoteNotification(req, resourceId, voterId, action) {
         });
 
         if(notification && req){
-            const {sendNotificationInRealTime} = await import('../controllers.js');
+            const {sendNotificationInRealTime} = await import('../controllers/notificationController.js');
             await sendNotificationInRealTime(req, notification);
         }
 
