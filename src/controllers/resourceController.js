@@ -3,6 +3,7 @@ import { parse } from 'node-html-parser';
 import fetch from 'node-fetch'
 import pool from '../config/db.js';
 import { calculateSimilarity } from '../utils/stringUtils.js';
+import * as notificationModel from '../models/notificationModel.js';
 
 export async function getResources(req, res) {
     try {
@@ -37,7 +38,7 @@ export async function getResource(req, res) {
     }
 }
 
-export async function createResource(req, res) {
+export async function createResource(req, res, next) {
     try {
         const {postTitle, postDescription, category, resources, tags} = req.body;
         const userId = req.user.id;
@@ -64,7 +65,18 @@ export async function createResource(req, res) {
             category_name 
         });
 
+        if (tags && tags.length > 0) {
+            const tagQuery = "SELECT id FROM tags WHERE tag_name = ANY($1)";
+            const tagResult = await pool.query(tagQuery, [tags]);
+            const tagIds = tagResult.rows.map(row => row.id);
+            
+            if (tagIds.length > 0) {
+                await notificationModel.createSimilarResourceNotification(req, result.postId, tagIds);
+            }
+        }
+
         res.status(201).json(result);
+        next(); 
     } catch (error) {
         console.error('Error creating resource:', error);
         res.status(500).json({ error: 'Failed to create resource' });
@@ -75,6 +87,7 @@ export async function updateResource(req, res) {
     try {
         const postId = req.params.id;
         const updates = req.body;
+        const userId = req.user.id;
 
         const resource = await resourceModel.getPost(postId);
 
@@ -84,11 +97,14 @@ export async function updateResource(req, res) {
             })
         }
 
-        if(resource.user_id !== req.user.id){
+        if(resource.user_id !== userId){
             return res.status(403).json({ error: 'You can only edit your own resources' });
         }
 
         const result = await resourceModel.editPost(postId, updates);
+        
+        await notificationModel.createResourceUpdateNotification(req, postId, userId);
+        
         res.json(result);
 
     } catch (error) {
@@ -103,13 +119,20 @@ export async function voteOnResource(req, res) {
         const postId = req.params.id;
         const userId = req.user.id;
 
-        if(!['up', 'down'].includes(voteType)){
+        if(!['up', 'down', 'none'].includes(voteType)){
             return res.status(400).json({
                 error: "Invalid vote type"
             });
         }
 
         const result = await resourceModel.voteOnPost(userId, postId, voteType);
+        
+        if (voteType === 'up') {
+            await notificationModel.createVoteNotification(req, postId, userId, 'added');
+        } else{
+            await notificationModel.createVoteNotification(req, postId, userId, 'removed');
+        }
+        
         res.json(result);
     } catch (error) {
         console.error('Error voting on resource:', error);
@@ -141,6 +164,8 @@ export async function addComment(req, res) {
         }
 
         const result = await resourceModel.addComment(userId, postId, comment);
+        
+        await notificationModel.createCommentNotification(req, postId, userId, comment);
 
         res.json(result);
 

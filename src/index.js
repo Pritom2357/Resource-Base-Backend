@@ -2,10 +2,21 @@ import app from './app.js';
 import dotenv from 'dotenv';
 import pool from './config/db.js';
 import { cleanupExpiredTokens } from './models/tokenModel.js';
+import http from 'http';
+import { initializeSocketServer } from './services/websocketService.js';
+import authConfig from './config/auth.js';
 
 dotenv.config();
 
+const server = http.createServer(app);
+
+const {io, userConnections} = initializeSocketServer(server, authConfig.accessToken.secret);
+
+app.set('io', io);
+app.set('userConnections', userConnections);
+
 const PORT = process.env.PORT || 3000;
+
 
 pool.query('SELECT NOW()')
 .then(()=>{
@@ -19,12 +30,12 @@ pool.query('SELECT NOW()')
 });
 
 function startServer(){
-    const server = app.listen(PORT, ()=>{
-        console.log(`🚀 Server running on http://localhost:${PORT}`);  
+    // Use the existing server with Socket.io attached
+    server.listen(PORT, ()=>{
+        console.log(`🚀 Server running with WebSockets on http://localhost:${PORT}`);  
     });
 
     setInterval(cleanupExpiredTokens, 24*60*60*1000);
-
     setupGracefulShutdown(server);
 }
 

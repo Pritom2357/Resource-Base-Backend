@@ -11,6 +11,7 @@ import resourceRoutes from './routes/resourceRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import statusRoutes from './routes/statusRoutes.js';
 import generalRoutes from './routes/generalRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js'
 
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
@@ -66,6 +67,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api', generalRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res)=>{
     res.json({
