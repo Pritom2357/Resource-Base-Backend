@@ -126,7 +126,7 @@ export async function getAllUsers(limit = 20, offset = 0) {
       SELECT
         id, username, photo, location, last_login, created_at
       FROM users
-      ORDER BY created_at DESC
+      ORDER BY last_login DESC NULLS LAST
       LIMIT $1 OFFSET $2
     `;
 
