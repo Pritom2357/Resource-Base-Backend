@@ -847,11 +847,12 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
         query += `
             ORDER BY 
                 CASE WHEN EXISTS (
-                SELECT 1 FROM resource_views rv 
-                WHERE rv.resource_id = r.id AND rv.user_id = $${paramIndex++}
+                    SELECT 1 FROM resource_views rv 
+                    WHERE rv.resource_id = r.id AND rv.user_id = $${paramIndex++}
                 ) THEN 0 ELSE 1 END, 
-                vote_count DESC, 
-                created_at DESC
+                ((SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'up') - 
+                 (SELECT COUNT(*) FROM votes WHERE resource_id = r.id AND vote_type = 'down')) DESC,  
+                r.created_at DESC
             LIMIT $${paramIndex++} OFFSET $${paramIndex++}
             `;
 
