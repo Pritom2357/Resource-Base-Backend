@@ -212,3 +212,16 @@ export async function getUserViewedTags(req, res) {
     }
 };
 
+export async function getAllUsers(req, res) {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const data = await userModel.getAllUsers(limit, offset);
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching all users:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+}

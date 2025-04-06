@@ -119,3 +119,55 @@ export async function updatePassword(userId, newPasswordHash) {
   const result = await pool.query(query, [newPasswordHash, userId]);
   return result.rows[0];
 }
+
+export async function getAllUsers(limit = 20, offset = 0) {
+   try {
+    const query = `
+      SELECT
+        id, username, photo, location, last_login, created_at
+      FROM users
+      ORDER BY created_at DESC
+      LIMIT $1 OFFSET $2
+    `;
+
+    const countQuery = `SELECT COUNT(*) FROM users`;
+
+    const [usersResult, countResult] = await Promise.all([
+      pool.query(query, [limit, offset]),
+      pool.query(countQuery)
+    ]);
+
+    const userIds = usersResult.rows.map(user => user.id);
+    const resourceCountsQuery = `
+      SELECT user_id, COUNT(*) as resource_count
+      FROM resource_posts
+      WHERE user_id = ANY($1)
+      GROUP BY user_id
+    `;
+
+    const resourceCounts = await pool.query(resourceCountsQuery, [userIds]);
+
+    const resourceCountMap = {};
+    resourceCounts.rows.forEach(row => {
+      resourceCountMap[row.user_id] = parseInt(row.resource_count)
+    });
+
+    const users = usersResult.rows.map(user => ({
+      ...user,
+      resource_count: resourceCountMap[user.id] || 0
+    }));
+
+    return {
+      users,
+      pagination: {
+        totalCount: parseInt(countResult.rows[0].count),
+        totalPages: Math.ceil(parseInt(countResult.rows[0].count)/limit),
+        currentPage: Math.floor(offset/limit) + 1,
+        pageSize: limit
+      }
+    }
+   } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+   }
+}
