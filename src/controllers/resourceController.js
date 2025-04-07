@@ -101,7 +101,58 @@ export async function updateResource(req, res) {
             return res.status(403).json({ error: 'You can only edit your own resources' });
         }
 
-        const result = await resourceModel.editPost(postId, updates);
+        const formattedUpdates = {
+            postTitle: updates.postTitle,
+            postDescription: updates.postDescription,
+            category: updates.category
+        };
+
+        if (updates.resources && updates.resources.length > 0) {
+            const existingResources = resource.resources || [];
+            const existingIds = existingResources.map(r => r.id);
+            
+            formattedUpdates.updateResources = updates.resources
+                .filter(res => res.id && existingIds.includes(res.id))
+                .map(res => ({
+                    id: res.id,
+                    title: res.title,
+                    url: res.url,
+                    description: res.description,
+                    thumbnail_url: res.thumbnail_url,
+                    favicon_url: res.favicon_url,
+                    site_name: res.site_name
+                }));
+                
+            formattedUpdates.addResources = updates.resources
+                .filter(res => !res.id || !existingIds.includes(res.id))
+                .map(res => ({
+                    title: res.title,
+                    url: res.url,
+                    description: res.description,
+                    thumbnail_url: res.thumbnail_url || '',
+                    favicon_url: res.favicon_url || '',
+                    site_name: res.site_name || ''
+                }));
+            
+            const updatedIds = updates.resources
+                .filter(res => res.id)
+                .map(res => res.id);
+            
+            formattedUpdates.removeResources = existingIds
+                .filter(id => !updatedIds.includes(id));
+        }
+
+        if (updates.tags) {
+            const existingTags = resource.tags || [];
+            formattedUpdates.addTags = updates.tags
+                .filter(tag => !existingTags.includes(tag));
+            formattedUpdates.removeTags = existingTags
+                .filter(tag => !updates.tags.includes(tag));
+        }
+
+        console.log("Formatted updates for backend:", formattedUpdates);
+
+        const result = await resourceModel.editPost(postId, formattedUpdates);
         
         await notificationModel.createResourceUpdateNotification(req, postId, userId);
         
