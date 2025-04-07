@@ -484,3 +484,35 @@ export async function getPersonalizedResources(req, res) {
         res.status(500).json({ error: 'Failed to fetch personalized resources' });
     }
 }
+
+export async function getSimilarResources(req, res) {
+    try {
+        const { resourceId, tags } = req.query;
+        
+        if (!resourceId || !tags) {
+            return res.status(400).json({ error: 'Both resourceId and tags parameters are required' });
+        }
+        
+        // Parse tags properly, ensuring it's handled as an array
+        let tagArray;
+        if (typeof tags === 'string') {
+            tagArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);
+        } else if (Array.isArray(tags)) {
+            tagArray = tags;
+        } else {
+            return res.status(400).json({ error: 'Invalid tags parameter format' });
+        }
+        
+        if (tagArray.length === 0) {
+            return res.json([]);
+        }
+        
+        const limit = parseInt(req.query.limit) || 5;
+        
+        const result = await resourceModel.getSimilarResources(resourceId, tagArray, limit);
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching similar resources:', error);
+        res.status(500).json({ error: 'Failed to fetch similar resources' });
+    }
+}

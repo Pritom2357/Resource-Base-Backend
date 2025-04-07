@@ -923,3 +923,39 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
         throw error;
     }
 }
+
+export async function getSimilarResources(resourceId, tags, limit = 5) {
+  try {
+    // Make sure tags is always an array of strings
+    const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
+    
+    // Use a query that avoids JSON comparison errors
+    const query = `
+      SELECT r.*,
+      (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+      (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+      (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+      (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+      u.username as author_username,
+      (SELECT json_agg(t2.tag_name) FROM resource_tags rt2
+       JOIN tags t2 ON rt2.tag_id = t2.id
+       WHERE rt2.post_id = r.id) as tags,
+      COUNT(DISTINCT t.tag_name) as tag_match_count
+      FROM resource_posts r
+      JOIN users u ON r.user_id = u.id
+      JOIN resource_tags rt ON r.id = rt.post_id
+      JOIN tags t ON rt.tag_id = t.id
+      WHERE r.id != $1
+      AND t.tag_name = ANY($2::text[])
+      GROUP BY r.id, u.username
+      ORDER BY tag_match_count DESC, r.created_at DESC
+      LIMIT $3
+    `;
+    
+    const result = await pool.query(query, [resourceId, tagArray, limit]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error finding similar resources:', error);
+    throw error;
+  }
+}
