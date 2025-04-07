@@ -12,7 +12,10 @@ const userConnections = new Map();
 export function initializeSocketServer(server, jwtSecret){
     const io = new Server(server, {
         cors: {
-            origin: ["http://localhost:5173", "https://resource-base.vercel.app"],
+            origin: [
+                "http://localhost:5173", 
+                "https://resource-base-frontend-production.up.railway.app"
+            ],
             methods: ['GET', 'POST'],
             credentials: true
         }
