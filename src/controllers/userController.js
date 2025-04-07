@@ -259,3 +259,14 @@ export async function getUserPreferences(req, res) {
         res.status(500).json({ error: 'Failed to fetch preferences' });
     }
 }
+
+export async function getUserWeeklyStats(req, res) {
+    try {
+        const userId = req.user.id;
+        const stats = await userModel.getUserWeeklyStats(userId);
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching user weekly stats:', error);
+        res.status(500).json({ error: 'Failed to fetch weekly stats' });    
+    }
+}

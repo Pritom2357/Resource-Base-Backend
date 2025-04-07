@@ -224,3 +224,25 @@ export async function getUserPreferences(userId) {
     return { tags: [], categories: [] };
   }
 }
+
+
+export async function getUserWeeklyStats(userId) {
+  try {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate - 7);
+
+    const statsQuery = `
+      SELECT
+        (SELECT COUNT(*) FROM resource_posts WHERE user_id = $1 AND created_at > $2) as shared_resources_count,
+        (SELECT COUNT(DISTINCT resource_id) FROM resource_views WHERE user_id = $1 AND viewed_at > $2) as viewed_resources_count,
+        (SELECT COUNT(*) FROM bookmarks WHERE user_id = $1 AND created_at > $2) as bookmarked_count,
+        (SELECT COUNT(*) FROM comments WHERE user_id = $1 AND created_at > $2) as commented_count
+    `;
+
+    const result = await pool.query(statsQuery, [userId, oneWeekAgo]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error getting user weekly stats:', error);
+    throw error;
+  }
+}

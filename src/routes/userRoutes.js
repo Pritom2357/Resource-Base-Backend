@@ -13,10 +13,10 @@ router.get('/profile', authenticateToken, trackUserActivity, userController.getP
 router.put('/profile', authenticateToken, trackUserActivity, userController.updateProfile);
 router.post('/preferences', authenticateToken, userController.savePreferences);
 router.get('/preferences', authenticateToken, userController.getUserPreferences);
+router.get('/stats/weekly', authenticateToken, userController.getUserWeeklyStats)
 
 // Public routes
 router.get('/all', userController.getAllUsers);
-// router.post('/preferences', authenticateToken, userController)
 router.get('/:username', userController.getPublicProfile); 
 router.get('/:username/resources', userController.getUserResources);
 router.get('/:username/tags/viewed', userController.getUserViewedTags); 
