@@ -156,11 +156,21 @@ export async function editPost(postId, updates) {
             for(const resource of addResources){
                 const resourceId = uuidv4();
                 await client.query(
-                    "INSERT INTO resources (id, name, url, description) VALUES ($1, $2, $3, $4)", [resourceId, resource.title, resource.url, resource.description]
+                    "INSERT INTO resources (id, name, url, description, thumbnail_url, favicon_url, site_name) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                    [
+                        resourceId, 
+                        resource.title, 
+                        resource.url, 
+                        resource.description,
+                        resource.thumbnail_url,
+                        resource.favicon_url,
+                        resource.site_name
+                    ]
                 );
 
                 await client.query(
-                    "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", [postId, resourceId]
+                    "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", 
+                    [postId, resourceId]
                 );
             }
         }
