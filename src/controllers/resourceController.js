@@ -121,9 +121,9 @@ export async function updateResource(req, res) {
                         title: res.title,
                         url: res.url,
                         description: res.description,
-                        thumbnail_url: res.thumbnail_url || existingResource.thumbnail_url || '',
-                        favicon_url: res.favicon_url || existingResource.favicon_url || '',
-                        site_name: res.site_name || existingResource.site_name || ''
+                        thumbnail_url: res.thumbnail_url !== undefined ? res.thumbnail_url : existingResource.thumbnail_url,
+                        favicon_url: res.favicon_url !== undefined ? res.favicon_url : existingResource.favicon_url,
+                        site_name: res.site_name !== undefined ? res.site_name : existingResource.site_name
                     };
                 });
                 
@@ -133,9 +133,9 @@ export async function updateResource(req, res) {
                     title: res.title,
                     url: res.url,
                     description: res.description,
-                    thumbnail_url: res.thumbnail_url || '',
-                    favicon_url: res.favicon_url || '',
-                    site_name: res.site_name || ''
+                    thumbnail_url: res.thumbnail_url,
+                    favicon_url: res.favicon_url,
+                    site_name: res.site_name
                 }));
             
             const updatedIds = updates.resources
