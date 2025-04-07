@@ -55,9 +55,21 @@ export async function createPost(postData) {
     try {
         await client.query('BEGIN');
 
+        const categoryQuery = `
+            SELECT name FROM categories WHERE id = $1
+        `;
+
+        const categoryNameResult = await client.query(categoryQuery, [category]);
+
+        const categoryName = categoryNameResult.rows.length > 0 ? categoryNameResult.rows[0].name : null;
+
+        if (!category || categoryNameResult.rows.length === 0) {
+            throw new Error('Invalid category selected');
+        }
+
         await client.query(
-            "INSERT INTO resource_posts (id, post_title, post_description, user_id, category_id, vote_count, comment_count, created_at) VALUES($1, $2, $3, $4, $5, 0, 0, NOW())", 
-            [postId, postTitle, postDescription, userId, category]
+            "INSERT INTO resource_posts (id, post_title, post_description, user_id, category_id, category_name, vote_count, comment_count, created_at) VALUES($1, $2, $3, $4, $5, $6, 0, 0, NOW())", 
+            [postId, postTitle, postDescription, userId, category, categoryName]
         );
 
         for(const resource of resources){
