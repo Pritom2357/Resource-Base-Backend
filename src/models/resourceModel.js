@@ -934,7 +934,8 @@ export async function getSimilarResources(resourceId, tags, limit = 5) {
     u.username as author_username,
     (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
-     WHERE rt.post_id = r.id) as tags
+     WHERE rt.post_id = r.id) as tags,
+    COUNT(DISTINCT t.tag_name) as tag_match_count
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
     JOIN resource_tags rt ON r.id = rt.post_id
@@ -942,7 +943,7 @@ export async function getSimilarResources(resourceId, tags, limit = 5) {
     WHERE r.id != $1
     AND t.tag_name = ANY($2::text[])
     GROUP BY r.id, u.username
-    ORDER BY COUNT(DISTINCT t.tag_name) DESC, r.created_at DESC
+    ORDER BY tag_match_count DESC, r.created_at DESC
     LIMIT $3
   `;
   
