@@ -923,3 +923,29 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
         throw error;
     }
 }
+
+export async function getSimilarResources(resourceId, tags, limit = 5) {
+  const query = `
+    SELECT DISTINCT r.*,
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
+    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
+    (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
+    (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
+    u.username as author_username,
+    (SELECT json_agg(t.tag_name) FROM resource_tags rt
+     JOIN tags t ON rt.tag_id = t.id
+     WHERE rt.post_id = r.id) as tags
+    FROM resource_posts r
+    JOIN users u ON r.user_id = u.id
+    JOIN resource_tags rt ON r.id = rt.post_id
+    JOIN tags t ON rt.tag_id = t.id
+    WHERE r.id != $1
+    AND t.tag_name = ANY($2::text[])
+    GROUP BY r.id, u.username
+    ORDER BY COUNT(DISTINCT t.tag_name) DESC, r.created_at DESC
+    LIMIT $3
+  `;
+  
+  const result = await pool.query(query, [resourceId, tags, limit]);
+  return result.rows;
+}
