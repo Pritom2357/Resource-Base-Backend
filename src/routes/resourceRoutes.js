@@ -11,7 +11,7 @@ router.get('/', resourceController.getResources);
 router.get('/search', resourceController.searchResources);
 router.get('/tags/popular', resourceController.getPopularTags);
 router.get('/categories', resourceController.getCategories);
-router.get('/similar', resourceController.getSimilarResources);
+// router.get('/similar', resourceController.getSimilarResources);
 router.get('/check-similarity', resourceController.checkSimilarity);
 router.get('/extract-metadata', resourceController.extractUrlMetadata);
 router.post('/', authenticateToken, resourceController.createResource, checkResourceCreatorBadges);
