@@ -97,6 +97,10 @@ export async function updateResource(req, res) {
             })
         }
 
+        console.log("Existing resource: ", resource);
+        console.log("Updates: ", updates);
+        
+
         if(resource.user_id !== userId){
             return res.status(403).json({ error: 'You can only edit your own resources' });
         }
