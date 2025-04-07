@@ -113,15 +113,19 @@ export async function updateResource(req, res) {
             
             formattedUpdates.updateResources = updates.resources
                 .filter(res => res.id && existingIds.includes(res.id))
-                .map(res => ({
-                    id: res.id,
-                    title: res.title,
-                    url: res.url,
-                    description: res.description,
-                    thumbnail_url: res.thumbnail_url,
-                    favicon_url: res.favicon_url,
-                    site_name: res.site_name
-                }));
+                .map(res => {
+                    const existingResource = existingResources.find(er => er.id === res.id);
+                    
+                    return {
+                        id: res.id,
+                        title: res.title,
+                        url: res.url,
+                        description: res.description,
+                        thumbnail_url: res.thumbnail_url || existingResource.thumbnail_url || '',
+                        favicon_url: res.favicon_url || existingResource.favicon_url || '',
+                        site_name: res.site_name || existingResource.site_name || ''
+                    };
+                });
                 
             formattedUpdates.addResources = updates.resources
                 .filter(res => !res.id || !existingIds.includes(res.id))
