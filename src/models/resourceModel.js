@@ -925,6 +925,8 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
 }
 
 export async function getSimilarResources(resourceId, tags, limit = 5) {
+  const tagArray = Array.isArray(tags) ? tags : tags.split(',');
+  
   const query = `
     SELECT DISTINCT r.*,
     (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
@@ -932,9 +934,9 @@ export async function getSimilarResources(resourceId, tags, limit = 5) {
     (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
     u.username as author_username,
-    (SELECT json_agg(t.tag_name) FROM resource_tags rt
-     JOIN tags t ON rt.tag_id = t.id
-     WHERE rt.post_id = r.id) as tags,
+    (SELECT json_agg(t2.tag_name) FROM resource_tags rt2
+     JOIN tags t2 ON rt2.tag_id = t2.id
+     WHERE rt2.post_id = r.id) as tags,
     COUNT(DISTINCT t.tag_name) as tag_match_count
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
@@ -947,6 +949,6 @@ export async function getSimilarResources(resourceId, tags, limit = 5) {
     LIMIT $3
   `;
   
-  const result = await pool.query(query, [resourceId, tags, limit]);
+  const result = await pool.query(query, [resourceId, tagArray, limit]);
   return result.rows;
 }
