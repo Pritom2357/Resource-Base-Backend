@@ -229,7 +229,7 @@ export async function getUserPreferences(userId) {
 export async function getUserWeeklyStats(userId) {
   try {
     const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate - 7);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const statsQuery = `
       SELECT
