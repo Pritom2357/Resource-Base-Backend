@@ -24,9 +24,9 @@ export async function getResources(limit=20, offset=0, sortBy='vote_count') {
     (SELECT COUNT(*) FROM comments c WHERE c.resource_id=r.id) as comment_count,
     (SELECT COUNT(*) FROM bookmarks b WHERE b.resource_id=r.id) as bookmark_count, 
     u.username as author_username,
-    (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt
+    (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
-     WHERE rt.post_id = r.id)::TEXT as tags
+     WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
     ORDER BY ${sortOption}
@@ -287,9 +287,9 @@ export async function getPost(postId) {
             'favicon_url', r.favicon_url,
             'site_name', r.site_name
         )) as resources,
-        (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt 
+        (SELECT json_agg(t.tag_name) FROM resource_tags rt 
          JOIN tags t ON rt.tag_id = t.id 
-         WHERE rt.post_id = p.id)::TEXT as tags
+         WHERE rt.post_id = p.id) as tags
     FROM resource_posts p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN categories c ON p.category_id = c.id
@@ -663,9 +663,9 @@ export async function searchResourcesByTag(tagName, limit=20) {
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
     u.username as author_username,
     c.name as category_name,
-    (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt
+    (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
-     WHERE rt.post_id = r.id)::TEXT as tags
+     WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
     LEFT JOIN categories c ON r.category_id = c.id
@@ -693,9 +693,9 @@ export async function searchResourcesByCategory(categoryId, limit=20) {
     (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
     u.username as author_username,
     c.name as category_name, 
-    (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt
+    (SELECT json_agg(t.tag_name) FROM resource_tags rt
      JOIN tags t ON rt.tag_id = t.id
-     WHERE rt.post_id = r.id)::TEXT as tags
+     WHERE rt.post_id = r.id) as tags
     FROM resource_posts r
     JOIN users u ON r.user_id = u.id
     LEFT JOIN categories c ON r.category_id = c.id
@@ -721,9 +721,9 @@ export async function getUserBookmarks(userId) {
             (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
             (SELECT COUNT(*) FROM bookmarks WHERE resource_id = r.id) as bookmark_count,
             u.username as author_username,
-            (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt 
+            (SELECT json_agg(t.tag_name) FROM resource_tags rt 
              JOIN tags t ON rt.tag_id = t.id 
-             WHERE rt.post_id = r.id)::TEXT as tags
+             WHERE rt.post_id = r.id) as tags
         FROM bookmarks b
         JOIN resource_posts r ON b.resource_id = r.id
         JOIN users u ON r.user_id = u.id
@@ -821,9 +821,9 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
             (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
             (SELECT COUNT(*) FROM bookmarks WHERE resource_id = r.id) as bookmark_count,
             u.username as author_username,
-            (SELECT to_json(array_agg(t.tag_name)) FROM resource_tags rt 
+            (SELECT json_agg(t.tag_name) FROM resource_tags rt 
             JOIN tags t ON rt.tag_id = t.id 
-            WHERE rt.post_id = r.id)::TEXT as tags
+            WHERE rt.post_id = r.id) as tags
             FROM resource_posts r
             JOIN users u ON r.user_id = u.id
             LEFT JOIN categories c ON r.category_id = c.id
@@ -922,33 +922,4 @@ export async function getPersonalizedResources(userId, limit=20, offset=0) {
         console.error('Error fetching personalized resources:', error);
         throw error;
     }
-}
-
-export async function getSimilarResources(resourceId, tags, limit = 5) {
-  const tagArray = Array.isArray(tags) ? tags : tags.split(',');
-  
-  const query = `
-    SELECT r.*,
-    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='up') - 
-    (SELECT COUNT(*) FROM votes WHERE resource_id=r.id AND vote_type='down') as vote_count,
-    (SELECT COUNT(*) FROM comments WHERE resource_id = r.id) as comment_count,
-    (SELECT COUNT(*) FROM bookmarks WHERE resource_id=r.id) as bookmark_count, 
-    u.username as author_username,
-    (SELECT to_json(array_agg(t2.tag_name)) FROM resource_tags rt2
-     JOIN tags t2 ON rt2.tag_id = t2.id
-     WHERE rt2.post_id = r.id)::TEXT as tags,
-    COUNT(DISTINCT t.tag_name) as tag_match_count
-    FROM resource_posts r
-    JOIN users u ON r.user_id = u.id
-    JOIN resource_tags rt ON r.id = rt.post_id
-    JOIN tags t ON rt.tag_id = t.id
-    WHERE r.id != $1
-    AND t.tag_name = ANY($2::text[])
-    GROUP BY r.id, u.username
-    ORDER BY tag_match_count DESC, r.created_at DESC
-    LIMIT $3
-  `;
-  
-  const result = await pool.query(query, [resourceId, tagArray, limit]);
-  return result.rows;
 }

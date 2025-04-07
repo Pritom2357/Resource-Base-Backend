@@ -484,22 +484,3 @@ export async function getPersonalizedResources(req, res) {
         res.status(500).json({ error: 'Failed to fetch personalized resources' });
     }
 }
-
-export async function getSimilarResources(req, res) {
-    try {
-        const { resourceId, tags } = req.query;
-        
-        if (!tags) {
-            return res.status(400).json({ error: 'Tags parameter is required' });
-        }
-        
-        const tagArray = tags.split(',');
-        const limit = parseInt(req.query.limit) || 3;
-        
-        const result = await resourceModel.getSimilarResources(resourceId, tagArray, limit);
-        res.json(result);
-    } catch (error) {
-        console.error('Error fetching similar resources:', error);
-        res.status(500).json({ error: 'Failed to fetch similar resources' });
-    }
-}
