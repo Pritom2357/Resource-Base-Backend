@@ -72,7 +72,8 @@ export async function createPost(postData) {
             [postId, postTitle, postDescription, userId, category, categoryName]
         );
 
-        for(const resource of resources){
+        for(let i = 0; i < resources.length; i++) {
+            const resource = resources[i];
             const resourceId = uuidv4();
 
             await client.query(
@@ -89,7 +90,8 @@ export async function createPost(postData) {
             );
 
             await client.query(
-                "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", [postId, resourceId]
+                "INSERT INTO post_resources (post_id, resource_id, position) VALUES ($1, $2, $3)", 
+                [postId, resourceId, i]  
             );
         }
 
@@ -153,8 +155,14 @@ export async function editPost(postId, updates) {
         }
 
         if(addResources && addResources.length > 0){
-            for(const resource of addResources){
+            const positionQuery = "SELECT COALESCE(MAX(position), -1) as max_pos FROM post_resources WHERE post_id = $1";
+            const posResult = await client.query(positionQuery, [postId]);
+            let startPosition = parseInt(posResult.rows[0].max_pos) + 1;
+            
+            for(let i = 0; i < addResources.length; i++){
+                const resource = addResources[i];
                 const resourceId = uuidv4();
+                
                 await client.query(
                     "INSERT INTO resources (id, name, url, description, thumbnail_url, favicon_url, site_name) VALUES ($1, $2, $3, $4, $5, $6, $7)",
                     [
@@ -169,8 +177,8 @@ export async function editPost(postId, updates) {
                 );
 
                 await client.query(
-                    "INSERT INTO post_resources (post_id, resource_id) VALUES ($1, $2)", 
-                    [postId, resourceId]
+                    "INSERT INTO post_resources (post_id, resource_id, position) VALUES ($1, $2, $3)", 
+                    [postId, resourceId, startPosition + i]
                 );
             }
         }
@@ -288,7 +296,7 @@ export async function getPost(postId) {
         (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'up') - 
         (SELECT COUNT(*) FROM votes WHERE resource_id = p.id AND vote_type = 'down') as vote_count,
         u.username as author_username,
-        json_agg(json_build_object(
+        (SELECT json_agg(json_build_object(
             'id', r.id,
             'title', r.name,
             'description', r.description,
@@ -296,15 +304,15 @@ export async function getPost(postId) {
             'thumbnail_url', r.thumbnail_url,
             'favicon_url', r.favicon_url,
             'site_name', r.site_name
-        )) as resources,
+        ) ORDER BY pr.position) FROM post_resources pr 
+           JOIN resources r ON pr.resource_id = r.id 
+           WHERE pr.post_id = p.id) as resources,
         (SELECT json_agg(t.tag_name) FROM resource_tags rt 
          JOIN tags t ON rt.tag_id = t.id 
          WHERE rt.post_id = p.id) as tags
     FROM resource_posts p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN categories c ON p.category_id = c.id
-    LEFT JOIN post_resources pr ON p.id = pr.post_id
-    LEFT JOIN resources r ON pr.resource_id = r.id
     WHERE p.id = $1
     GROUP BY p.id, u.username, c.id
     `;
