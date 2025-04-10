@@ -47,6 +47,31 @@ export function initializeSocketServer(server, jwtSecret){
         }
         userConnections.get(userId).add(socket.id);
 
+        socket.on('check_connection_status', (data) => {
+            const { userId } = data;
+            const userSockets = userConnections.get(userId) || new Set();
+            const isConnected = userSockets.has(socket.id);
+            console.log(`Connection status for ${userId}: ${isConnected ? 'CONNECTED' : 'NOT CONNECTED'}`);
+            console.log(`Socket IDs for user: ${Array.from(userSockets).join(', ')}`);
+            socket.emit('connection_status', { 
+                connected: isConnected,
+                socketCount: userSockets.size 
+            });
+        });
+
+        socket.on('register_connection', (data) => {
+            const { userId } = data;
+            if (!userId) return;
+            
+            let userSockets = userConnections.get(userId);
+            if (!userSockets) {
+                userSockets = new Set();
+                userConnections.set(userId, userSockets);
+            }
+            userSockets.add(socket.id);
+            console.log(`Manually registered socket ${socket.id} for user ${userId}`);
+        });
+
         socket.on('disconnect', ()=>{
             if(userConnections.has(userId)){
                 userConnections.get(userId).delete(socket.id);
