@@ -32,7 +32,6 @@ router.put('/profile-with-image', authenticateToken, handleImageUpload, updatePr
 
 
 
-// Add this route
 router.get('/recalculate-badges', authenticateToken, badgeController.recalculateAllBadges);
 
 export default router;

@@ -20,7 +20,6 @@ export default function configurePassport() {
             
             const email = profile.emails?.[0]?.value;
             if (!email) {
-                return done(new Error('Email required'));
             }
             
             user = await userModel.createOAuthUser({

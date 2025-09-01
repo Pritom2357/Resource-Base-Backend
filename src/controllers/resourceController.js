@@ -552,7 +552,6 @@ export async function getSimilarResources(req, res) {
             return res.status(400).json({ error: 'Both resourceId and tags parameters are required' });
         }
         
-        // Parse tags properly, ensuring it's handled as an array
         let tagArray;
         if (typeof tags === 'string') {
             tagArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);

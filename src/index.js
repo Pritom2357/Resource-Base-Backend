@@ -30,7 +30,6 @@ pool.query('SELECT NOW()')
 });
 
 function startServer(){
-    // Use the existing server with Socket.io attached
     server.listen(PORT, ()=>{
         console.log(`🚀 Server running with WebSockets on http://localhost:${PORT}`);  
     });
